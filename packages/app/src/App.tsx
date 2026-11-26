@@ -43,6 +43,7 @@ function ResilioShell() {
     qrProgress,
     toast,
     dismissToast,
+    requestPersistenceNow,
     doReceive,
     doIssue,
     doEmergencyIssue,
@@ -76,16 +77,23 @@ function ResilioShell() {
             <span className="rounded bg-slate-800 px-2 py-0.5 font-mono text-[11px] text-slate-300">
               nodeId: {replica?.nodeId ?? '...'} | clock: {replica?.clock ?? 0}
             </span>
-            <span
-              className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold ${
+            <button
+              type="button"
+              onClick={requestPersistenceNow}
+              title={
                 persistenceGranted
-                  ? 'bg-emerald-950 text-emerald-300'
-                  : 'bg-amber-950 text-amber-300'
+                  ? t.storagePersistent
+                  : t.enablePersistentStorage
+              }
+              className={`inline-flex cursor-pointer items-center gap-1 rounded px-2 py-0.5 text-[11px] font-semibold transition-colors ${
+                persistenceGranted
+                  ? 'bg-emerald-950 text-emerald-300 hover:bg-emerald-900'
+                  : 'bg-amber-950 text-amber-300 hover:bg-amber-900'
               }`}
             >
               <Database className="h-3 w-3" />
               {persistenceGranted ? t.storagePersistent : t.storageBestEffort}
-            </span>
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -139,19 +147,28 @@ function ResilioShell() {
       {/* Persistent Storage Warning Banner (UI-CONTRACT.md §1) */}
       {persistenceGranted === false && !dismissStorageBanner && (
         <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
-          <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-2">
+          <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0 text-[#B45309]" />
               <span>{t.storageWarningBanner}</span>
             </div>
-            <button
-              type="button"
-              onClick={() => setDismissStorageBanner(true)}
-              aria-label="Dismiss storage warning"
-              className="rounded p-1 hover:bg-amber-100"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={requestPersistenceNow}
+                className="rounded-lg bg-[#B45309] px-3 py-1 text-[11px] font-bold text-white shadow-xs transition-colors hover:bg-amber-800"
+              >
+                {t.enablePersistentStorage}
+              </button>
+              <button
+                type="button"
+                onClick={() => setDismissStorageBanner(true)}
+                aria-label="Dismiss storage warning"
+                className="rounded p-1 hover:bg-amber-100"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}

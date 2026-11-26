@@ -82,10 +82,17 @@ export function P2PSyncScreen({
 
   const peerCount = Object.keys(nearbyPeers).length;
   const lastCursorTime = cursors[0]?.lastSyncAt
-    ? new Date(cursors[0].lastSyncAt).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
+    ? lang === 'id'
+      ? `${new Date(cursors[0].lastSyncAt).toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })} WIB`
+      : new Date(cursors[0].lastSyncAt).toLocaleTimeString('en-GB', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
     : lang === 'en'
       ? 'Not synced yet'
       : 'Belum sinkron';
@@ -159,7 +166,7 @@ export function P2PSyncScreen({
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-6 pt-4">
+      <main className="flex flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-8 pt-4">
         {/* Status Card: Ready to Sync (Offline) with crisp Emerald #059669 dot */}
         <section className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center gap-3">

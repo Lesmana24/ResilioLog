@@ -84,12 +84,24 @@ export async function getOrCreateNodeId(): Promise<NodeId> {
   return created;
 }
 
-export async function requestPersistentStorage(): Promise<boolean> {
+export async function requestPersistentStorage(interactive = false): Promise<boolean> {
   if (typeof navigator === 'undefined' || !navigator.storage?.persist) {
     return false;
   }
   try {
-    return await navigator.storage.persist();
+    if (
+      interactive &&
+      typeof Notification !== 'undefined' &&
+      Notification.permission === 'default'
+    ) {
+      await Notification.requestPermission().catch(() => 'denied');
+    }
+    const granted = await navigator.storage.persist();
+    if (granted) return true;
+    if (typeof navigator.storage.persisted === 'function') {
+      return await navigator.storage.persisted();
+    }
+    return false;
   } catch {
     return false;
   }
