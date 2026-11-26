@@ -14,7 +14,6 @@ export const COPY: Record<
     receiveBtn: string;
     issueBtn: string;
     commodityLabel: string;
-    priorityBadge: string;
     qtyLabel: string;
     remainingQuota: string;
     criticalBadge: string;
@@ -47,6 +46,12 @@ export const COPY: Record<
     approveReroute: string;
     ratifyOverride: string;
     ratifiedDone: string;
+    storagePersistent: string;
+    storageBestEffort: string;
+    storageWarningBanner: string;
+    mobileVolunteerBtn: string;
+    commandCenterBtn: string;
+    initializingDb: string;
   }
 > = {
   en: {
@@ -61,9 +66,8 @@ export const COPY: Record<
     receiveBtn: '+ Receive',
     issueBtn: '- Issue',
     commodityLabel: 'Commodity',
-    priorityBadge: 'Priority 1',
     qtyLabel: 'Quantity',
-    remainingQuota: 'Local Quota',
+    remainingQuota: 'Remaining Quota',
     criticalBadge: 'Critical',
     healthyBadge: 'Available',
     requestQuotaBtn: '+ Request Quota',
@@ -73,7 +77,7 @@ export const COPY: Record<
     unsyncedLogsTitle: 'Pending Local Logs',
     unsyncedLogsSub: 'Safely persisted in IndexedDB • Ready to sync',
     savedLocalBadge: 'Saved Local',
-    navInventaris: 'Inventaris',
+    navInventaris: 'Inventory',
     navSync: 'P2P Sync',
     navHistory: 'History',
     readyToSyncTitle: 'Ready to Sync (Offline)',
@@ -94,6 +98,13 @@ export const COPY: Record<
     approveReroute: 'Approve Reroute',
     ratifyOverride: 'Ratify Override Quota',
     ratifiedDone: 'Ratified',
+    storagePersistent: 'Storage Persistent',
+    storageBestEffort: 'Storage Best-Effort',
+    storageWarningBanner:
+      'Persistent browser storage was not granted; browser eviction is possible under disk pressure.',
+    mobileVolunteerBtn: 'Mobile Volunteer',
+    commandCenterBtn: 'Command Center',
+    initializingDb: 'Initializing IndexedDB',
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
@@ -107,7 +118,6 @@ export const COPY: Record<
     receiveBtn: '+ Barang Masuk',
     issueBtn: '- Barang Keluar',
     commodityLabel: 'Komoditas',
-    priorityBadge: 'Prioritas 1',
     qtyLabel: 'Jumlah Volume',
     remainingQuota: 'Sisa Kuota',
     criticalBadge: 'Kritis',
@@ -140,5 +150,12 @@ export const COPY: Record<
     approveReroute: 'Setujui Reroute',
     ratifyOverride: 'Ratifikasi Kuota Override',
     ratifiedDone: 'Teratifikasi',
+    storagePersistent: 'Penyimpanan Persisten',
+    storageBestEffort: 'Penyimpanan Standar',
+    storageWarningBanner:
+      'Penyimpanan persisten browser belum diizinkan; data berisiko dibersihkan saat memori penuh.',
+    mobileVolunteerBtn: 'Relawan Lapangan',
+    commandCenterBtn: 'Command Center',
+    initializingDb: 'Menyiapkan IndexedDB',
   },
 };

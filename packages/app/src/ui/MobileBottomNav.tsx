@@ -20,15 +20,18 @@ export function MobileBottomNav({
   labels,
 }: MobileBottomNavProps) {
   return (
-    <nav className="sticky bottom-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur-xl">
-      <div className="flex h-18 items-center justify-around px-4">
+    <nav
+      aria-label="Mobile navigation"
+      className="shrink-0 z-30 border-t border-slate-200 bg-white/95 backdrop-blur-xl"
+    >
+      <div className="flex h-[72px] items-center justify-around px-4">
         <button
           type="button"
           onClick={() => onChangeTab('inventaris')}
           aria-current={activeTab === 'inventaris' ? 'page' : undefined}
-          className={`flex min-h-[48px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1 transition-colors ${
+          className={`flex min-h-[48px] min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors ${
             activeTab === 'inventaris'
-              ? 'font-bold text-[#0F172A]'
+              ? 'bg-slate-100/90 font-bold text-[#0F172A]'
               : 'font-medium text-slate-500 hover:text-[#0F172A]'
           }`}
         >
@@ -40,9 +43,9 @@ export function MobileBottomNav({
           type="button"
           onClick={() => onChangeTab('sync')}
           aria-current={activeTab === 'sync' ? 'page' : undefined}
-          className={`flex min-h-[48px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1 transition-colors ${
+          className={`flex min-h-[48px] min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors ${
             activeTab === 'sync'
-              ? 'font-bold text-[#0F172A]'
+              ? 'bg-slate-100/90 font-bold text-[#0F172A]'
               : 'font-medium text-slate-500 hover:text-[#0F172A]'
           }`}
         >
@@ -61,9 +64,9 @@ export function MobileBottomNav({
           type="button"
           onClick={() => onChangeTab('history')}
           aria-current={activeTab === 'history' ? 'page' : undefined}
-          className={`flex min-h-[48px] min-w-[64px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1 transition-colors ${
+          className={`flex min-h-[48px] min-w-[76px] flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1.5 transition-colors ${
             activeTab === 'history'
-              ? 'font-bold text-[#0F172A]'
+              ? 'bg-slate-100/90 font-bold text-[#0F172A]'
               : 'font-medium text-slate-500 hover:text-[#0F172A]'
           }`}
         >
