@@ -222,7 +222,7 @@ export function InventarisScreen({
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6 pt-4">
+      <main className="flex flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-8 pt-4">
         {activeTab === 'inventaris' && (
           <>
             {/* Rapid Action Buttons: Scan Koli & Input Kode */}

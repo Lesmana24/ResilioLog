@@ -127,7 +127,7 @@ export function useReplica(lang: AppLanguage) {
     (async () => {
       try {
         const seeded = await ensureSeededReplica();
-        const persisted = await requestPersistentStorage();
+        const persisted = await requestPersistentStorage(false);
         if (!active) return;
         replicaRef.current = seeded;
         setPersistenceGranted(persisted);
@@ -141,6 +141,30 @@ export function useReplica(lang: AppLanguage) {
       active = false;
     };
   }, []);
+
+  const requestPersistenceNow = useCallback(async (): Promise<boolean> => {
+    const granted = await requestPersistentStorage(true);
+    setPersistenceGranted(granted);
+    const l = langRef.current;
+    if (granted) {
+      pushToast(
+        'success',
+        l === 'en' ? 'Persistent Storage Enabled' : 'Penyimpanan Persisten Aktif',
+        l === 'en'
+          ? 'IndexedDB is now protected from browser storage eviction.'
+          : 'IndexedDB kini terlindungi dari pembersihan otomatis browser.',
+      );
+    } else {
+      pushToast(
+        'warning',
+        l === 'en' ? 'Persistence Not Granted' : 'Penyimpanan Persisten Belum Diizinkan',
+        l === 'en'
+          ? 'Allow notifications or install as PWA to enable persistent storage in Chrome.'
+          : 'Izinkan notifikasi atau pasang sebagai PWA untuk mengaktifkan penyimpanan persisten.',
+      );
+    }
+    return granted;
+  }, [pushToast]);
 
   const currentRow = useLiveQuery<ReplicaRow | undefined>(
     async () => (dbReady ? await db.state.get('current') : undefined),
@@ -639,6 +663,7 @@ export function useReplica(lang: AppLanguage) {
     qrProgress,
     toast,
     dismissToast: () => setToast(null),
+    requestPersistenceNow,
     doReceive,
     doIssue,
     doEmergencyIssue,

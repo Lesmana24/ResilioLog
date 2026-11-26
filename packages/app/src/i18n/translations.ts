@@ -49,6 +49,7 @@ export const COPY: Record<
     storagePersistent: string;
     storageBestEffort: string;
     storageWarningBanner: string;
+    enablePersistentStorage: string;
     mobileVolunteerBtn: string;
     commandCenterBtn: string;
     initializingDb: string;
@@ -102,6 +103,7 @@ export const COPY: Record<
     storageBestEffort: 'Storage Best-Effort',
     storageWarningBanner:
       'Persistent browser storage was not granted; browser eviction is possible under disk pressure.',
+    enablePersistentStorage: 'Enable Persistent Storage',
     mobileVolunteerBtn: 'Mobile Volunteer',
     commandCenterBtn: 'Command Center',
     initializingDb: 'Initializing IndexedDB',
@@ -154,6 +156,7 @@ export const COPY: Record<
     storageBestEffort: 'Penyimpanan Standar',
     storageWarningBanner:
       'Penyimpanan persisten browser belum diizinkan; data berisiko dibersihkan saat memori penuh.',
+    enablePersistentStorage: 'Aktifkan Penyimpanan Persisten',
     mobileVolunteerBtn: 'Relawan Lapangan',
     commandCenterBtn: 'Command Center',
     initializingDb: 'Menyiapkan IndexedDB',
