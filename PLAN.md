@@ -21,7 +21,7 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 ---
 
 ## Day 1 — Thu 26 Nov: Foundation (Role B)
-- [ ] **B-01** Install deps and verify scaffold: run `scripts/bootstrap.sh`, commit lockfile, record versions in `docs/TECH-STACK.md` §9 (scaffold already provided) — see prompt P-01
+- [x] **B-01** Install deps and verify scaffold: run `scripts/bootstrap.sh`, commit lockfile, record versions in `docs/TECH-STACK.md` §9 (scaffold already provided) — see prompt P-01 *(done: fixed `packages/sync/package.json` name/scripts, installed deps via pnpm 10.34.9, `typecheck` & `test` pass)*
 - [ ] **B-02** Re-confirm `schema.json` with Role C; write Zod mirror + test validating `examples` in schema.json
 - [ ] **B-03** Core types, `Result`, Lamport (`compareLamport`, `tagOf`, `tick`, `receive`), `canonicalize`
 - [ ] **B-04** PN-Counter + unit tests
