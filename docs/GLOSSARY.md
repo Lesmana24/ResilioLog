@@ -1,0 +1,23 @@
+# GLOSSARY
+- **Node / Replica** — one device with its own full copy of the state; identified by `nodeId`.
+- **CvRDT** — state-based Conflict-free Replicated Data Type; replicas exchange states, merged by a join (⊔).
+- **Join-semilattice** — set with a merge that is commutative, associative, idempotent.
+- **Merge / ⊔** — the join function combining two states into their least upper bound.
+- **Delta** — a partial state (only changed parts) merged with the same function.
+- **PN-Counter** — pair of grow-only counters (P increments, N decrements); value = ΣP − ΣN.
+- **OR-Set** — observed-remove set; add wins over concurrent remove; elements carry unique tags.
+- **Tombstone** — recorded removal (tag in `removed`).
+- **Lamport timestamp** — logical clock `(counter, nodeId)`; gives a deterministic total order without wall-clock trust.
+- **Bounded Counter** — counter with a lower bound enforced locally via *rights*.
+- **Rights** — permission units to decrement; held per node; transferable.
+- **granted(i)** — all rights ever held by node i. **localRights(i)** — rights i may still spend.
+- **remainingRatio** — localRights/granted; ≤ 0.15 triggers a top-up request.
+- **Top-up request** — queue entry asking for more quota for an item/node.
+- **Emergency override** — audited issue beyond quota; creates deficit when global value < 0.
+- **Deficit** — max(0, −value).
+- **Ledger** — PN-Counter tracking inbound/outbound. **Quota** — Bounded Counter enforcing outbound.
+- **Envelope** — message wrapper (version, ids, cursors, crc32, payload).
+- **Chunk** — one QR-sized slice of an encoded envelope.
+- **Cursor** — per-peer Lamport counter marking what was last sent.
+- **Feature Freeze** — Fri 27 Nov 18:00 WIB; only bug fixes afterwards.
+- **Final Day** — later phase with 2–3 extra tasks; must be shown separately from V1.

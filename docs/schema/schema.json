@@ -1,0 +1,524 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://resiliolog.local/schema/v1.json",
+  "title": "ResilioLog wire & state schema v1",
+  "description": "LOCKED contract between Role B (engine) and Role C (app). Change only via docs/DECISIONS.md + human approval. Zod schemas must mirror this file.",
+  "x-schemaVersion": 1,
+  "x-canonicalJson": "UTF-8, object keys sorted lexicographically, no insignificant whitespace.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SyncEnvelope"
+    },
+    {
+      "$ref": "#/$defs/SignalEnvelope"
+    }
+  ],
+  "$defs": {
+    "NodeId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{4,16}$",
+      "description": "Device id, generated once per install, persisted."
+    },
+    "ItemId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,47}$",
+      "description": "Format <slug>-<lamport c>-<nodeId>, generated at creation."
+    },
+    "Tag": {
+      "type": "string",
+      "pattern": "^[a-z0-9]{4,16}:[0-9]+$",
+      "description": "<nodeId>:<lamport c>. Unique per event."
+    },
+    "Nat": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "Qty": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1000000000
+    },
+    "Lamport": {
+      "type": "object",
+      "required": [
+        "c",
+        "n"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "c": {
+          "$ref": "#/$defs/Nat"
+        },
+        "n": {
+          "$ref": "#/$defs/NodeId"
+        }
+      }
+    },
+    "NatMap": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/NodeId"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/Nat"
+      },
+      "description": "nodeId -> grow-only integer. Merge = pointwise max."
+    },
+    "PNCounter": {
+      "type": "object",
+      "required": [
+        "p",
+        "n"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "p": {
+          "$ref": "#/$defs/NatMap"
+        },
+        "n": {
+          "$ref": "#/$defs/NatMap"
+        }
+      },
+      "description": "value = sum(p) - sum(n)"
+    },
+    "BoundedCounter": {
+      "type": "object",
+      "required": [
+        "R",
+        "U",
+        "O"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "R": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/NodeId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/NatMap"
+          },
+          "description": "R[i][i]=increments at i; R[i][j]=rights transferred i->j"
+        },
+        "U": {
+          "$ref": "#/$defs/NatMap"
+        },
+        "O": {
+          "$ref": "#/$defs/NatMap"
+        }
+      },
+      "description": "See SPEC-CRDT section 5."
+    },
+    "ItemMeta": {
+      "type": "object",
+      "required": [
+        "name",
+        "unit",
+        "category",
+        "createdBy",
+        "createdAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "category": {
+          "enum": [
+            "food",
+            "water",
+            "medicine",
+            "shelter",
+            "hygiene",
+            "other"
+          ]
+        },
+        "createdBy": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "createdAt": {
+          "$ref": "#/$defs/Lamport"
+        }
+      }
+    },
+    "ItemState": {
+      "type": "object",
+      "required": [
+        "meta",
+        "ledger",
+        "quota",
+        "touchedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/ItemMeta"
+        },
+        "ledger": {
+          "$ref": "#/$defs/PNCounter"
+        },
+        "quota": {
+          "$ref": "#/$defs/BoundedCounter"
+        },
+        "touchedAt": {
+          "$ref": "#/$defs/Lamport"
+        }
+      }
+    },
+    "DistributionEntry": {
+      "type": "object",
+      "required": [
+        "kind",
+        "itemId",
+        "qty",
+        "by",
+        "ts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "receive",
+            "issue",
+            "override_issue"
+          ]
+        },
+        "itemId": {
+          "$ref": "#/$defs/ItemId"
+        },
+        "qty": {
+          "$ref": "#/$defs/Qty"
+        },
+        "by": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "ts": {
+          "$ref": "#/$defs/Lamport"
+        },
+        "wallTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Informational only; never used for ordering."
+        },
+        "counterparty": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 200
+        }
+      },
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "override_issue"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "reason"
+        ]
+      }
+    },
+    "TopUpRequest": {
+      "type": "object",
+      "required": [
+        "itemId",
+        "requester",
+        "ts"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "itemId": {
+          "$ref": "#/$defs/ItemId"
+        },
+        "requester": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "ts": {
+          "$ref": "#/$defs/Lamport"
+        }
+      }
+    },
+    "DistributionLog": {
+      "type": "object",
+      "required": [
+        "adds",
+        "removed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "adds": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Tag"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/DistributionEntry"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Tag"
+          }
+        }
+      },
+      "description": "OR-Set. removed = voided entries (display only)."
+    },
+    "TopUpQueue": {
+      "type": "object",
+      "required": [
+        "adds",
+        "removed"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "adds": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/Tag"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/TopUpRequest"
+          }
+        },
+        "removed": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/Tag"
+          }
+        }
+      },
+      "description": "OR-Set. removed = resolved requests."
+    },
+    "ResilioState": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "items",
+        "distributionLog",
+        "topUpQueue"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "schemaVersion": {
+          "const": 1
+        },
+        "items": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/ItemId"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ItemState"
+          }
+        },
+        "distributionLog": {
+          "$ref": "#/$defs/DistributionLog"
+        },
+        "topUpQueue": {
+          "$ref": "#/$defs/TopUpQueue"
+        }
+      },
+      "description": "Full state OR delta. A delta is a ResilioState containing only changed items/entries; merged with the same function."
+    },
+    "SyncEnvelope": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "msgId",
+        "from",
+        "since",
+        "until",
+        "crc32",
+        "payload"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "enum": [
+            "delta",
+            "full"
+          ]
+        },
+        "msgId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]{6}$"
+        },
+        "from": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "to": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "since": {
+          "$ref": "#/$defs/Nat",
+          "description": "Sender's cursor for this peer: delta covers changes with Lamport c > since (informational for receiver)."
+        },
+        "until": {
+          "$ref": "#/$defs/Nat",
+          "description": "Sender's Lamport clock when the delta was cut. Receiver sets clock = max(local, until)+1."
+        },
+        "crc32": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}$",
+          "description": "CRC-32 of canonicalJSON(payload) (sorted keys, no whitespace, UTF-8)."
+        },
+        "payload": {
+          "$ref": "#/$defs/ResilioState"
+        }
+      }
+    },
+    "SignalEnvelope": {
+      "type": "object",
+      "required": [
+        "v",
+        "type",
+        "msgId",
+        "from",
+        "kind",
+        "sdp"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "v": {
+          "const": 1
+        },
+        "type": {
+          "const": "signal"
+        },
+        "msgId": {
+          "type": "string",
+          "pattern": "^[a-z0-9]{6}$"
+        },
+        "from": {
+          "$ref": "#/$defs/NodeId"
+        },
+        "kind": {
+          "enum": [
+            "offer",
+            "answer"
+          ]
+        },
+        "sdp": {
+          "type": "string",
+          "maxLength": 20000
+        }
+      },
+      "description": "WebRTC manual signaling (app-level, Role C). Same transport encoding as SyncEnvelope."
+    },
+    "QrChunk": {
+      "type": "string",
+      "pattern": "^RL1\\|[a-z0-9]{6}\\|[0-9]{1,3}/[0-9]{1,3}\\|[A-Za-z0-9_-]+$",
+      "description": "RL1|<msgId>|<index 1-based>/<total>|<slice of base64url(deflate(JSON(envelope)))>. Default slice length 800 chars; QR error correction M."
+    }
+  },
+  "examples": [
+    {
+      "v": 1,
+      "type": "delta",
+      "msgId": "k3x9ab",
+      "from": "e5f6g7h8",
+      "since": 0,
+      "until": 5,
+      "crc32": "4bd32532",
+      "payload": {
+        "schemaVersion": 1,
+        "items": {
+          "rice-1-a1b2c3d4": {
+            "meta": {
+              "name": "Rice",
+              "unit": "kg",
+              "category": "food",
+              "createdBy": "a1b2c3d4",
+              "createdAt": {
+                "c": 1,
+                "n": "a1b2c3d4"
+              }
+            },
+            "ledger": {
+              "p": {
+                "a1b2c3d4": 100
+              },
+              "n": {
+                "e5f6g7h8": 10
+              }
+            },
+            "quota": {
+              "R": {
+                "a1b2c3d4": {
+                  "a1b2c3d4": 100,
+                  "e5f6g7h8": 40
+                }
+              },
+              "U": {
+                "e5f6g7h8": 10
+              },
+              "O": {}
+            },
+            "touchedAt": {
+              "c": 5,
+              "n": "e5f6g7h8"
+            }
+          }
+        },
+        "distributionLog": {
+          "adds": {
+            "a1b2c3d4:2": {
+              "kind": "receive",
+              "itemId": "rice-1-a1b2c3d4",
+              "qty": 100,
+              "by": "a1b2c3d4",
+              "ts": {
+                "c": 2,
+                "n": "a1b2c3d4"
+              },
+              "counterparty": "Warehouse BNPB"
+            },
+            "e5f6g7h8:5": {
+              "kind": "issue",
+              "itemId": "rice-1-a1b2c3d4",
+              "qty": 10,
+              "by": "e5f6g7h8",
+              "ts": {
+                "c": 5,
+                "n": "e5f6g7h8"
+              },
+              "counterparty": "Shelter 3"
+            }
+          },
+          "removed": []
+        },
+        "topUpQueue": {
+          "adds": {},
+          "removed": []
+        }
+      }
+    }
+  ]
+}

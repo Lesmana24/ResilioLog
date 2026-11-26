@@ -1,0 +1,14 @@
+{
+  "name": "@resiliolog/crdt-core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure CRDT engine: PN-Counter, OR-Set, Bounded Counter, Lamport, ResilioState merge. Zero runtime dependencies.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json --noEmit false --outDir dist"
+  }
+}

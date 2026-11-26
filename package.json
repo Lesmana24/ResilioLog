@@ -1,0 +1,12 @@
+{
+  "name": "resiliolog",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "pnpm -r --if-present run test",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "build": "pnpm -r --if-present run build",
+    "lint": "pnpm -r --if-present run lint"
+  }
+}
