@@ -25,7 +25,7 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 - [ ] **B-02** Re-confirm `schema.json` with Role C; write Zod mirror + test validating `examples` in schema.json
 - [x] **B-03** Core types, `Result`, Lamport (`compareLamport`, `tagOf`, `tick`, `receive`), `canonicalize` *(done: implemented `lamport.ts`, `canonicalize.ts`, and 7 unit/property tests at 1000 runs)*
 - [x] **B-04** PN-Counter + unit tests *(done: implemented `pn-counter.ts` and 8 unit/property tests L1–L5 at 1000 runs)*
-- [ ] **B-05** OR-Set (tag-based, tombstone set) + unit tests
+- [x] **B-05** OR-Set (tag-based, tombstone set) + unit tests *(done: implemented `or-set.ts` and 7 unit/property tests including add-wins, tag conflict, Lamport sort, and L1–L5 at 1000 runs)*
 - [ ] **B-06** `mergeStates` for ResilioState (items, log, queue)
 - [ ] **B-07** fast-check generators (random op sequences over 2–3 replicas) + law tests (commutative/associative/idempotent) for PN, OR-Set, ResilioState
 - Exit criteria: `pnpm test` green; three laws pass ≥ 1000 runs on all implemented types.
