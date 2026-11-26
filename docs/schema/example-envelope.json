@@ -1,0 +1,81 @@
+{
+  "v": 1,
+  "type": "delta",
+  "msgId": "k3x9ab",
+  "from": "e5f6g7h8",
+  "since": 0,
+  "until": 5,
+  "crc32": "4bd32532",
+  "payload": {
+    "schemaVersion": 1,
+    "items": {
+      "rice-1-a1b2c3d4": {
+        "meta": {
+          "name": "Rice",
+          "unit": "kg",
+          "category": "food",
+          "createdBy": "a1b2c3d4",
+          "createdAt": {
+            "c": 1,
+            "n": "a1b2c3d4"
+          }
+        },
+        "ledger": {
+          "p": {
+            "a1b2c3d4": 100
+          },
+          "n": {
+            "e5f6g7h8": 10
+          }
+        },
+        "quota": {
+          "R": {
+            "a1b2c3d4": {
+              "a1b2c3d4": 100,
+              "e5f6g7h8": 40
+            }
+          },
+          "U": {
+            "e5f6g7h8": 10
+          },
+          "O": {}
+        },
+        "touchedAt": {
+          "c": 5,
+          "n": "e5f6g7h8"
+        }
+      }
+    },
+    "distributionLog": {
+      "adds": {
+        "a1b2c3d4:2": {
+          "kind": "receive",
+          "itemId": "rice-1-a1b2c3d4",
+          "qty": 100,
+          "by": "a1b2c3d4",
+          "ts": {
+            "c": 2,
+            "n": "a1b2c3d4"
+          },
+          "counterparty": "Warehouse BNPB"
+        },
+        "e5f6g7h8:5": {
+          "kind": "issue",
+          "itemId": "rice-1-a1b2c3d4",
+          "qty": 10,
+          "by": "e5f6g7h8",
+          "ts": {
+            "c": 5,
+            "n": "e5f6g7h8"
+          },
+          "counterparty": "Shelter 3"
+        }
+      },
+      "removed": []
+    },
+    "topUpQueue": {
+      "adds": {},
+      "removed": []
+    }
+  }
+}

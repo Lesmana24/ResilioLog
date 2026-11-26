@@ -1,0 +1,11 @@
+{
+  "name": "@resiliolog/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "PWA UI (Role C). Created as React + Vite; see README.",
+  "dependencies": {
+    "@resiliolog/crdt-core": "workspace:*",
+    "@resiliolog/sync": "workspace:*"
+  }
+}
