@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   Clock,
   Copy,
+  Droplets,
   Navigation,
   Package,
   QrCode,
@@ -13,7 +14,6 @@ import {
   Stethoscope,
   Truck,
   User,
-  Droplets,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import type { DistributionEntry, Tag } from '@resiliolog/crdt-core';
@@ -43,10 +43,11 @@ interface P2PSyncScreenProps {
   onSimulateCourierArrival: () => Promise<void>;
 }
 
-function tileLabel(name: string): string {
-  if (name.toLowerCase().includes('sembako')) return 'Sembako';
-  if (name.toLowerCase().includes('air')) return 'Air 19L';
-  if (name.toLowerCase().includes('trauma')) return 'Trauma Kit';
+function tileLabel(name: string, lang: AppLanguage): string {
+  const lower = name.toLowerCase();
+  if (lower.includes('sembako')) return lang === 'en' ? 'Food Aid' : 'Sembako';
+  if (lower.includes('air')) return lang === 'en' ? 'Water 19L' : 'Air 19L';
+  if (lower.includes('trauma')) return 'Trauma Kit';
   return name;
 }
 
@@ -113,9 +114,9 @@ export function P2PSyncScreen({
   }
 
   return (
-    <div className="mx-auto flex min-h-[780px] w-full max-w-md flex-col bg-[#F8FAFC] text-[#0F172A] shadow-lg sm:rounded-3xl sm:border sm:border-slate-200 overflow-hidden relative">
+    <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-[#F8FAFC] text-[#0F172A] shadow-lg sm:rounded-3xl sm:border sm:border-slate-200">
       {/* Header matching Stitch P2P Sync */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl">
+      <header className="shrink-0 z-30 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -158,7 +159,7 @@ export function P2PSyncScreen({
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-3.5 px-4 pb-24 pt-4">
+      <main className="flex flex-1 flex-col gap-3.5 overflow-y-auto px-4 pb-6 pt-4">
         {/* Status Card: Ready to Sync (Offline) with crisp Emerald #059669 dot */}
         <section className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center gap-3">
@@ -176,12 +177,13 @@ export function P2PSyncScreen({
                 </span>
               </div>
               <span className="text-xs text-slate-500">
-                {peerCount} {lang === 'en' ? 'peer tab(s) nearby' : 'perangkat/tab terdeteksi'} •{' '}
+                {peerCount}{' '}
+                {lang === 'en' ? 'peer tab(s) nearby' : 'perangkat/tab terdeteksi'} •{' '}
                 <span className="font-mono">{nodeId}</span>
               </span>
             </div>
           </div>
-          <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-[#059669] border border-emerald-200">
+          <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-[#059669]">
             {t.activeBadge}
           </span>
         </section>
@@ -202,7 +204,7 @@ export function P2PSyncScreen({
                 className="flex flex-col items-center justify-center rounded-xl bg-slate-100 p-2.5"
               >
                 <span className="truncate text-[11px] font-medium text-slate-500">
-                  {tileLabel(item.name)}
+                  {tileLabel(item.name, lang)}
                 </span>
                 <span className="font-mono text-sm font-extrabold text-[#0F172A] tabular-nums">
                   {item.stock} {item.unit}
@@ -258,7 +260,8 @@ export function P2PSyncScreen({
           <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                RL1 QR Frame ({safeFrameIdx + 1} / {Math.max(1, qrBundle.chunks.length)})
+                {lang === 'en' ? 'RL1 QR Frame' : 'Frame QR RL1'} ({safeFrameIdx + 1} /{' '}
+                {Math.max(1, qrBundle.chunks.length)})
               </span>
               <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-600">
                 CRC {qrBundle.crc32 || '00000000'} • {qrBundle.totalChars}B
@@ -266,7 +269,7 @@ export function P2PSyncScreen({
             </div>
 
             {activeFrame && (
-              <div className="flex flex-col items-center gap-2 rounded-xl bg-slate-50 p-3 border border-slate-200/60">
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-slate-200/60 bg-slate-50 p-3">
                 <div className="rounded-xl bg-white p-2.5 shadow-xs">
                   <QRCodeSVG value={activeFrame} size={164} level="M" />
                 </div>
@@ -277,14 +280,15 @@ export function P2PSyncScreen({
                     onClick={() => setFrameIndex((i) => Math.max(0, i - 1))}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold disabled:opacity-40"
                   >
-                    Prev
+                    {lang === 'en' ? 'Prev' : 'Sblm'}
                   </button>
                   <button
                     type="button"
                     onClick={() => navigator.clipboard?.writeText(activeFrame)}
                     className="inline-flex items-center gap-1 rounded-lg bg-slate-200/70 px-2.5 py-1 font-mono text-[11px] font-semibold text-[#0F172A]"
                   >
-                    <Copy className="h-3 w-3" /> Copy Frame
+                    <Copy className="h-3 w-3" />{' '}
+                    {lang === 'en' ? 'Copy Frame' : 'Salin Frame'}
                   </button>
                   <button
                     type="button"
@@ -294,7 +298,7 @@ export function P2PSyncScreen({
                     }
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold disabled:opacity-40"
                   >
-                    Next
+                    {lang === 'en' ? 'Next' : 'Brkt'}
                   </button>
                 </div>
               </div>
@@ -322,7 +326,7 @@ export function P2PSyncScreen({
                 </label>
                 {qrProgress && (
                   <span className="font-mono text-[11px] font-bold text-[#059669]">
-                    {qrProgress.received} of {qrProgress.total}
+                    {qrProgress.received} {lang === 'en' ? 'of' : 'dari'} {qrProgress.total}
                   </span>
                 )}
               </div>

@@ -3,6 +3,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ChevronDown,
+  Droplets,
   History,
   Keyboard,
   LockOpen,
@@ -17,7 +18,6 @@ import {
   User,
   WifiOff,
   X,
-  Droplets,
 } from 'lucide-react';
 import type { DistributionEntry, ItemId, Tag } from '@resiliolog/crdt-core';
 import type { AppLanguage } from '../engine/errorMessages';
@@ -42,9 +42,33 @@ interface InventarisScreenProps {
 }
 
 const SIMULATED_QR_CRATES = [
-  { code: 'RL-CRATE-SMB-20', itemId: 'sembako', qty: 20, label: 'Paket Sembako (+20 Koli)', donor: 'Armada Kurir #02' },
-  { code: 'RL-CRATE-AIR-30', itemId: 'air-19l', qty: 30, label: 'Air Bersih 19L (+30 Unit)', donor: 'Tangki Posko B-07' },
-  { code: 'RL-CRATE-MED-10', itemId: 'trauma-kit', qty: 10, label: 'Obat Trauma Kit B (+10 Set)', donor: 'Gudang Medis Pusat' },
+  {
+    code: 'RL-CRATE-SMB-20',
+    itemId: 'sembako',
+    qty: 20,
+    labelEn: 'Food Aid Parcels (+20 Koli)',
+    labelId: 'Paket Sembako (+20 Koli)',
+    donorEn: 'Courier Fleet #02',
+    donorId: 'Armada Kurir #02',
+  },
+  {
+    code: 'RL-CRATE-AIR-30',
+    itemId: 'air-19l',
+    qty: 30,
+    labelEn: 'Clean Water 19L (+30 Units)',
+    labelId: 'Air Bersih 19L (+30 Unit)',
+    donorEn: 'Posko B-07 Tanker',
+    donorId: 'Tangki Posko B-07',
+  },
+  {
+    code: 'RL-CRATE-MED-10',
+    itemId: 'trauma-kit',
+    qty: 10,
+    labelEn: 'Trauma Kit B Medicine (+10 Sets)',
+    labelId: 'Obat Trauma Kit B (+10 Set)',
+    donorEn: 'Central Medical Depot',
+    donorId: 'Gudang Medis Pusat',
+  },
 ] as const;
 
 function itemIcon(category: string) {
@@ -78,7 +102,7 @@ export function InventarisScreen({
   const [scanOpen, setScanOpen] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualCode, setManualCode] = useState('SMB-25');
-  const [manualDonor, setManualDonor] = useState('Armada #04');
+  const [manualDonor, setManualDonor] = useState('Fleet #04');
 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
@@ -149,9 +173,9 @@ export function InventarisScreen({
   }
 
   return (
-    <div className="mx-auto flex min-h-[780px] w-full max-w-md flex-col bg-[#F8FAFC] text-[#0F172A] shadow-lg sm:rounded-3xl sm:border sm:border-slate-200 overflow-hidden relative">
+    <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden bg-[#F8FAFC] text-[#0F172A] shadow-lg sm:rounded-3xl sm:border sm:border-slate-200">
       {/* Header matching Stitch Inventaris */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 px-4 py-3 backdrop-blur-xl">
+      <header className="shrink-0 z-30 border-b border-slate-200/80 bg-white/95 px-4 py-3 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -198,7 +222,7 @@ export function InventarisScreen({
         </div>
       </header>
 
-      <main className="flex flex-1 flex-col gap-4 px-4 pb-24 pt-4">
+      <main className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-6 pt-4">
         {activeTab === 'inventaris' && (
           <>
             {/* Rapid Action Buttons: Scan Koli & Input Kode */}
@@ -304,7 +328,7 @@ export function InventarisScreen({
                 <div className="flex items-center gap-2 rounded-xl bg-slate-100 p-1.5">
                   <button
                     type="button"
-                    aria-label="Decrease quantity"
+                    aria-label={lang === 'en' ? 'Decrease quantity' : 'Kurangi jumlah'}
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
                     className="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-[#0F172A] shadow-xs transition-transform active:scale-95"
                   >
@@ -320,7 +344,7 @@ export function InventarisScreen({
                   </div>
                   <button
                     type="button"
-                    aria-label="Increase quantity"
+                    aria-label={lang === 'en' ? 'Increase quantity' : 'Tambah jumlah'}
                     onClick={() => setQty((q) => q + 1)}
                     className="flex h-12 w-12 items-center justify-center rounded-lg bg-white text-[#0F172A] shadow-xs transition-transform active:scale-95"
                   >
@@ -342,8 +366,8 @@ export function InventarisScreen({
                 </div>
               </div>
 
-              {/* Contextual Bounded Counter Quota Bar */}
-              {selectedItem && (
+              {/* Contextual Bounded Counter Quota Bar (ONLY in - Issue mode) */}
+              {flow === 'issue' && selectedItem && (
                 <div className="flex items-center justify-between gap-2 rounded-xl bg-slate-100 p-3">
                   <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -391,8 +415,8 @@ export function InventarisScreen({
                 </div>
               )}
 
-              {/* Insufficient Rights inline recovery banner */}
-              {insufficientRightsPrompt && selectedItem && (
+              {/* Insufficient Rights inline recovery banner (ONLY in - Issue mode) */}
+              {flow === 'issue' && insufficientRightsPrompt && selectedItem && (
                 <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                   <p className="font-semibold">
                     {lang === 'en'
@@ -418,7 +442,7 @@ export function InventarisScreen({
                 </div>
               )}
 
-              {/* Primary CTA & Emergency Override */}
+              {/* Primary CTA & Emergency Override (Emergency Override hidden in + Receive mode) */}
               <div className="flex flex-col gap-2 pt-1">
                 <button
                   type="button"
@@ -428,17 +452,19 @@ export function InventarisScreen({
                   <CheckCircle2 className="h-5 w-5 text-white" />
                   <span>{flow === 'receive' ? t.saveOfflineReceive : t.saveOfflineIssue}</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOverrideError(null);
-                    setOverrideOpen(true);
-                  }}
-                  className="flex h-9 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-[#B45309] transition-colors hover:bg-amber-50"
-                >
-                  <LockOpen className="h-4 w-4" />
-                  <span>{t.emergencyOverrideBtn}</span>
-                </button>
+                {flow === 'issue' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOverrideError(null);
+                      setOverrideOpen(true);
+                    }}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold text-[#B45309] transition-colors hover:bg-amber-50"
+                  >
+                    <LockOpen className="h-4 w-4" />
+                    <span>{t.emergencyOverrideBtn}</span>
+                  </button>
+                )}
               </div>
             </section>
           </>
@@ -550,12 +576,16 @@ export function InventarisScreen({
                         }`}
                       >
                         <CheckCircle2 className="h-3 w-3" />
-                        {isOverride ? 'Override Audit' : t.savedLocalBadge}
+                        {isOverride
+                          ? lang === 'en'
+                            ? 'Override Audit'
+                            : 'Audit Override'
+                          : t.savedLocalBadge}
                       </span>
                       <button
                         type="button"
-                        aria-label="Void log entry"
-                        title="Void"
+                        aria-label={lang === 'en' ? 'Void log entry' : 'Hapus tampilan log'}
+                        title={lang === 'en' ? 'Void' : 'Sembunyikan'}
                         onClick={() => onVoidLog(tag)}
                         className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
                       >
@@ -569,7 +599,9 @@ export function InventarisScreen({
             {filteredLogs.length === 0 && (
               <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500">
                 <History className="mx-auto mb-1.5 h-5 w-5 text-slate-400" />
-                {lang === 'en' ? 'No log entries match this filter.' : 'Belum ada catatan pada filter ini.'}
+                {lang === 'en'
+                  ? 'No log entries match this filter.'
+                  : 'Belum ada catatan pada filter ini.'}
               </div>
             )}
           </div>
@@ -591,7 +623,7 @@ export function InventarisScreen({
       {scanOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
           <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
                 <QrCode className="h-5 w-5 text-[#0F172A]" />
                 <h3 className="font-display text-base font-bold">{t.scanKoli}</h3>
@@ -610,27 +642,31 @@ export function InventarisScreen({
                 : 'Pilih simulasi barcode koli untuk mencatat barang masuk tanpa izin kamera:'}
             </p>
             <div className="mt-3 flex flex-col gap-2">
-              {SIMULATED_QR_CRATES.map((crate) => (
-                <button
-                  key={crate.code}
-                  type="button"
-                  onClick={async () => {
-                    await onReceive(crate.itemId, crate.qty, crate.donor, crate.code);
-                    setScanOpen(false);
-                  }}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
-                >
-                  <div>
-                    <div className="text-xs font-bold text-[#0F172A]">{crate.label}</div>
-                    <div className="font-mono text-[11px] text-slate-500">
-                      {crate.code} • {crate.donor}
+              {SIMULATED_QR_CRATES.map((crate) => {
+                const label = lang === 'en' ? crate.labelEn : crate.labelId;
+                const donor = lang === 'en' ? crate.donorEn : crate.donorId;
+                return (
+                  <button
+                    key={crate.code}
+                    type="button"
+                    onClick={async () => {
+                      await onReceive(crate.itemId, crate.qty, donor, crate.code);
+                      setScanOpen(false);
+                    }}
+                    className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition-colors hover:bg-slate-100"
+                  >
+                    <div>
+                      <div className="text-xs font-bold text-[#0F172A]">{label}</div>
+                      <div className="font-mono text-[11px] text-slate-500">
+                        {crate.code} • {donor}
+                      </div>
                     </div>
-                  </div>
-                  <span className="rounded-lg bg-[#0F172A] px-2.5 py-1 text-xs font-bold text-white">
-                    Scan
-                  </span>
-                </button>
-              ))}
+                    <span className="rounded-lg bg-[#0F172A] px-2.5 py-1 text-xs font-bold text-white">
+                      {lang === 'en' ? 'Scan' : 'Pindai'}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -639,8 +675,8 @@ export function InventarisScreen({
       {/* Manual Input Code Modal */}
       {manualOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div className="w-full max-w-sm space-y-3 rounded-2xl bg-white p-5 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
               <h3 className="font-display text-base font-bold">{t.inputCode}</h3>
               <button
                 type="button"
@@ -652,7 +688,9 @@ export function InventarisScreen({
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-slate-700">
-                {lang === 'en' ? 'Crate Code (number sets qty)' : 'Kode Koli (angka menentukan jumlah)'}
+                {lang === 'en'
+                  ? 'Crate Code (number sets qty)'
+                  : 'Kode Koli (angka menentukan jumlah)'}
               </label>
               <input
                 type="text"
@@ -693,7 +731,7 @@ export function InventarisScreen({
       {/* Emergency Quota Override Modal */}
       {overrideOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl border border-amber-300 bg-white p-5 shadow-xl space-y-3">
+          <div className="w-full max-w-sm space-y-3 rounded-2xl border border-amber-300 bg-white p-5 shadow-xl">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-[#B45309]">
                 <AlertTriangle className="h-5 w-5" />
@@ -707,7 +745,7 @@ export function InventarisScreen({
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <p className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
               {lang === 'en'
                 ? `Issuing ${qty} ${selectedItem.unit} of ${selectedItem.name} bypasses local Bounded Counter quota and creates a permanent Command Center audit entry.`
                 : `Menyalurkan ${qty} ${selectedItem.unit} ${selectedItem.name} melewati batas kuota lokal dan tercatat permanen untuk audit Command Center.`}
