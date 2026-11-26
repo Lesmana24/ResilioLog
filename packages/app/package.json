@@ -4,8 +4,28 @@
   "private": true,
   "type": "module",
   "description": "PWA UI (Role C). Scaffolded as React + Vite; see README.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
   "dependencies": {
     "@resiliolog/crdt-core": "workspace:*",
-    "@resiliolog/sync": "workspace:*"
+    "@resiliolog/sync": "workspace:*",
+    "dexie": "^4.4.7",
+    "dexie-react-hooks": "^4.4.0",
+    "lucide-react": "^1.81.0",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.5",
+    "@types/react": "^19.3.3",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.4.0"
   }
 }
