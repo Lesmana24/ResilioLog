@@ -1,11 +1,21 @@
 {
-  "name": "@resiliolog/app",
+  "name": "@resiliolog/sync",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "PWA UI (Role C). Created as React + Vite; see README.",
+  "description": "Wire layer: delta, envelope, compression, QR chunking, Zod schema validation.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json --noEmit false --outDir dist"
+  },
   "dependencies": {
     "@resiliolog/crdt-core": "workspace:*",
-    "@resiliolog/sync": "workspace:*"
+    "fflate": "^0.8.3",
+    "zod": "^4.6.7"
   }
 }

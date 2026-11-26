@@ -2,11 +2,20 @@
   "name": "resiliolog",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "pnpm -r --if-present run test",
     "typecheck": "pnpm -r --if-present run typecheck",
     "build": "pnpm -r --if-present run build",
     "lint": "pnpm -r --if-present run lint"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.11",
+    "fast-check": "^4.11.0",
+    "prettier": "^3.10.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.2"
   }
 }
