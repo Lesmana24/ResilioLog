@@ -1,8 +1,21 @@
-import type { BoundedCounter, NodeId, Result } from './types';
+import type { BoundedCounter, NatMap, NodeId, Result } from './types';
 import { notImplemented } from './errors';
 
+function mergeNatMap(a: NatMap, b: NatMap): NatMap {
+  const out: Record<NodeId, number> = {};
+  for (const k of Object.keys(a)) {
+    out[k] = a[k] ?? 0;
+  }
+  for (const k of Object.keys(b)) {
+    const bv = b[k] ?? 0;
+    const av = out[k] ?? 0;
+    out[k] = bv > av ? bv : av;
+  }
+  return out;
+}
+
 export function bcEmpty(): BoundedCounter {
-  return notImplemented('B-08');
+  return { R: {}, U: {}, O: {} };
 }
 export function bcIncrement(_s: BoundedCounter, _i: NodeId, _k: number): BoundedCounter {
   return notImplemented('B-08');
@@ -41,6 +54,24 @@ export function bcOverrideConsume(
 export function bcValue(_s: BoundedCounter): number {
   return notImplemented('B-08');
 }
-export function bcMerge(_a: BoundedCounter, _b: BoundedCounter): BoundedCounter {
-  return notImplemented('B-08');
+export function bcMerge(a: BoundedCounter, b: BoundedCounter): BoundedCounter {
+  const R: Record<NodeId, NatMap> = {};
+  for (const i of Object.keys(a.R)) {
+    const row = a.R[i];
+    if (row !== undefined) {
+      R[i] = { ...row };
+    }
+  }
+  for (const i of Object.keys(b.R)) {
+    const bRow = b.R[i];
+    if (bRow !== undefined) {
+      const aRow = R[i];
+      R[i] = aRow !== undefined ? mergeNatMap(aRow, bRow) : { ...bRow };
+    }
+  }
+  return {
+    R,
+    U: mergeNatMap(a.U, b.U),
+    O: mergeNatMap(a.O, b.O),
+  };
 }
