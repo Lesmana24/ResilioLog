@@ -4,3 +4,16 @@ coverage/
 .DS_Store
 *.log
 .env
+
+# AI / Agent configuration & instruction files
+AGENTS.md
+AGENT.md
+agent.md
+CLAUDE.md
+instructions.md
+.cursorrules
+.cursor/
+.windsurfrules
+.clinerules
+.github/copilot-instructions.md
+docs/AGENT-PROMPTS.md
