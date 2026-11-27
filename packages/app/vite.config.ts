@@ -14,6 +14,8 @@ export default defineConfig({
       includeAssets: ['icons/*.svg'],
       manifest: pwaManifest,
       workbox: {
+        cleanupOutdatedCaches: true,
+        navigateFallback: '/index.html',
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
       },
     }),
