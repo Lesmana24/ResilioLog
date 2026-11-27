@@ -7,6 +7,7 @@ import {
 } from '@resiliolog/crdt-core';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  clearLocalData,
   getCursor,
   loadReplica,
   requestPersistence,
@@ -120,5 +121,21 @@ describe('app/storage/db (F-02)', () => {
     });
     expect(await requestPersistence()).toBe(true);
     vi.unstubAllGlobals();
+  });
+
+  it('clearLocalData wipes state/cursors and generates a fresh nodeId on next loadReplica', async () => {
+    const name = uniqueDbName();
+    const db = new ResilioDatabase(name);
+    const r1 = await loadReplica(db);
+    await setCursor('bbbb2222', 3, db);
+
+    await clearLocalData(db);
+    const r2 = await loadReplica(db);
+    expect(r2.clock).toBe(0);
+    expect(Object.keys(r2.state.items)).toHaveLength(0);
+    expect(await getCursor('bbbb2222', db)).toBe(0);
+    expect(r2.nodeId).toMatch(/^[a-z0-9]{8}$/);
+    expect(r2.nodeId).not.toBe(r1.nodeId);
+    db.close();
   });
 });

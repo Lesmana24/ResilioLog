@@ -16,3 +16,9 @@ src/
 └─ pwa/                  manifest, icons, vite-plugin-pwa config
 ```
 Engine contract: `docs/UI-CONTRACT.md`. Never re-implement merge logic in the UI.
+
+## Dev-only controls
+
+- **Reset local data** and **Sample data** buttons in `DevReplicaPanel` are gated behind `import.meta.env.DEV` (`DEV-ONLY` badge) and hidden in production builds.
+- **Reset local data** requires explicit confirmation in a dialog, clears IndexedDB (`kv`, `state`, `cursors`), and generates a fresh 8-char `nodeId`.
+- Demo/sample items are never inserted automatically on startup.

@@ -120,6 +120,14 @@ export async function listCursors(
   return database.cursors.toArray();
 }
 
+export async function clearLocalData(database: ResilioDatabase = db): Promise<void> {
+  await database.transaction('rw', database.kv, database.state, database.cursors, async () => {
+    await database.kv.clear();
+    await database.state.clear();
+    await database.cursors.clear();
+  });
+}
+
 export async function requestPersistence(): Promise<boolean> {
   if (typeof navigator === 'undefined' || !navigator.storage?.persist) {
     return false;
