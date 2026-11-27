@@ -32,8 +32,8 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 
 ## Day 2 — Fri 27 Nov: Bounded Counter + Sync (Role B) → FREEZE 18:00
 - [x] **B-08** Bounded Counter (R matrix, U, O) + invariant tests (rights ≥ 0, value ≥ 0 without override) *(done: implemented all `bc*` functions in `bounded-counter.ts` + 5 tests B1–B4 & L1–L5 at 1000 runs)*
-- [ ] **B-09** Item operations: `createItem`, `receive`, `issue`, `transferRights`, `emergencyIssue` (ledger + quota + log updated atomically)
-- [ ] **B-10** Top-up trigger: after `issue`, if remainingRatio ≤ 0.15 → enqueue request (deduped)
+- [x] **B-09** Item operations: `createItem`, `receive`, `issue`, `transferRights`, `emergencyIssue` (ledger + quota + log updated atomically) *(done: implemented `ops.ts` + `queries.ts` (`itemSummary`) + 5 tests including B5, override, void, error codes)*
+- [x] **B-10** Top-up trigger: after `issue`, if remainingRatio ≤ 0.15 → enqueue request (deduped) *(done: integrated in `issue` + `resolveTopUp` + B6 test)*
 - [ ] **B-11** `packages/sync`: `makeDelta`, `applyDelta`, envelope, crc32, deflate+base64url, QR chunk/reassemble
 - [ ] **B-12** Public API doc for Role C (`packages/*/README.md` or `docs/API.md`) — **by 12:00** so C can wire UI
 - [ ] **B-13** Integration test: 2 replicas, partition → divergent ops → exchange deltas both ways → identical canonical state
