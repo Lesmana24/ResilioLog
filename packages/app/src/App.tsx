@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { LangProvider } from './i18n/useLang';
 import { ReplicaProvider, useReplica } from './state/useReplica';
+import { ActivityLogView } from './ui/ActivityLogView';
+import { AppLayout, type Page } from './ui/AppLayout';
 import { CommandCenterView } from './ui/CommandCenterView';
-import { DevReplicaPanel } from './ui/DevReplicaPanel';
+import { DashboardView } from './ui/DashboardView';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { FieldView } from './ui/FieldView';
+import { InventoryView } from './ui/InventoryView';
+import { SettingsView } from './ui/SettingsView';
 import { SyncView } from './ui/SyncView';
-
-type Page = 'field' | 'command-center' | 'sync';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,8 +17,9 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 function AppShell() {
-  const [page, setPage] = useState<Page>('field');
-  const { loading, storagePersistent } = useReplica();
+  const [page, setPage] = useState<Page>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { replica, loading, storagePersistent } = useReplica();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -35,85 +39,35 @@ function AppShell() {
   }
 
   return (
-    <div
-      style={{
-        fontFamily: 'system-ui, sans-serif',
-        maxWidth: 720,
-        margin: '0 auto',
-        padding: 12,
-        boxSizing: 'border-box',
-      }}
+    <AppLayout
+      page={page}
+      onNavigate={setPage}
+      installPrompt={installPrompt ? () => void handleInstall() : null}
+      storagePersistent={storagePersistent}
+      loading={loading}
+      nodeId={replica?.nodeId}
+      sidebarOpen={sidebarOpen}
+      onToggleSidebar={() => setSidebarOpen((o) => !o)}
     >
-      <style>{`
-        *, *::before, *::after { box-sizing: border-box; }
-        button, input, select, textarea { min-height: 40px; font-size: 16px; }
-        table { display: block; overflow-x: auto; }
-      `}</style>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
-        <h1 style={{ margin: 0, fontSize: 20 }}>ResilioLog</h1>
-        <nav aria-label="Primary navigation" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => setPage('field')}
-            aria-pressed={page === 'field'}
-          >
-            Field
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage('command-center')}
-            aria-pressed={page === 'command-center'}
-          >
-            Command Center
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage('sync')}
-            aria-pressed={page === 'sync'}
-          >
-            QR Sync
-          </button>
-          {installPrompt && (
-            <button type="button" onClick={() => void handleInstall()}>
-              Install App
-            </button>
-          )}
-        </nav>
-      </header>
-
-      {!loading && storagePersistent === false && (
-        <div
-          role="alert"
-          style={{
-            marginBottom: 16,
-            padding: 10,
-            backgroundColor: '#fef3c7',
-            border: '1px solid #f59e0b',
-            color: '#92400e',
-            borderRadius: 6,
-            fontSize: 13,
-          }}
-        >
-          <strong>Storage not persistent:</strong> Browser denied persistent storage. Local IndexedDB data may be evicted under storage pressure.
-        </div>
-      )}
-
-      <main>
-        {page === 'field' && <FieldView />}
-        {page === 'command-center' && <CommandCenterView />}
-        {page === 'sync' && <SyncView />}
-      </main>
-      <DevReplicaPanel />
-    </div>
+      {page === 'dashboard' && <DashboardView onNavigate={setPage} />}
+      {page === 'field' && <FieldView />}
+      {page === 'command-center' && <CommandCenterView />}
+      {page === 'inventory' && <InventoryView />}
+      {page === 'sync' && <SyncView />}
+      {page === 'activity-log' && <ActivityLogView />}
+      {page === 'settings' && <SettingsView />}
+    </AppLayout>
   );
 }
 
 export function App() {
   return (
     <ErrorBoundary>
-      <ReplicaProvider>
-        <AppShell />
-      </ReplicaProvider>
+      <LangProvider>
+        <ReplicaProvider>
+          <AppShell />
+        </ReplicaProvider>
+      </LangProvider>
     </ErrorBoundary>
   );
 }

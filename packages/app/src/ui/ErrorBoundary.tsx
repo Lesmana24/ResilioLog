@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { translations, type Lang } from '../i18n/translations';
+import { btn, card, colors, font, space } from './styles';
 
 interface ErrorBoundaryProps {
   readonly children: ReactNode;
@@ -7,6 +9,16 @@ interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   readonly hasError: boolean;
   readonly message: string;
+}
+
+function readLangSafe(): Lang {
+  try {
+    const v = localStorage.getItem('resiliolog_lang');
+    if (v === 'en' || v === 'id') return v;
+  } catch {
+    // ignore
+  }
+  return 'en';
 }
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -18,7 +30,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return {
       hasError: true,
-      message: error.message || 'An unexpected error occurred.',
+      message: error.message || translations[readLangSafe()].errBoundary_default!,
     };
   }
 
@@ -28,26 +40,27 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   override render() {
     if (this.state.hasError) {
+      const lang = readLangSafe();
+      const dict = translations[lang];
       return (
         <div
           role="alert"
           style={{
-            margin: 16,
-            padding: 16,
-            border: '2px solid #dc2626',
-            borderRadius: 8,
-            backgroundColor: '#fef2f2',
-            fontFamily: 'system-ui, sans-serif',
+            ...card,
+            margin: space.lg,
+            border: `2px solid ${colors.danger}`,
+            backgroundColor: colors.dangerBg,
+            fontFamily: font.family,
           }}
         >
-          <h2 style={{ marginTop: 0, color: '#991b1b' }}>Something went wrong</h2>
-          <p style={{ fontSize: 14, color: '#7f1d1d' }}>{this.state.message}</p>
+          <h2 style={{ marginTop: 0, color: colors.dangerText }}>{dict.errBoundary_title}</h2>
+          <p style={{ fontSize: font.sizeMd, color: colors.dangerText }}>{this.state.message}</p>
           <button
             type="button"
             onClick={() => window.location.reload()}
-            style={{ padding: '8px 14px' }}
+            style={btn.primary}
           >
-            Reload App
+            {dict.errBoundary_reload}
           </button>
         </div>
       );

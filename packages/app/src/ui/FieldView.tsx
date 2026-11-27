@@ -8,20 +8,23 @@ import {
   type ItemId,
 } from '@resiliolog/crdt-core';
 import { useState, type FormEvent } from 'react';
+import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
 import { EmergencyOverrideDialog } from './EmergencyOverrideDialog';
 import { getEngineErrorMessage, parsePositiveIntQty } from './error-messages';
+import { alert, badge, btn, card, colors, font, input as inputStyle, label as labelStyle, radius, space } from './styles';
 
 type LogFilter = 'all' | DistributionKind;
 
 export function FieldView() {
   const { replica, loading, run } = useReplica();
+  const { t, lang } = useLang();
 
   const [selectedItemId, setSelectedItemId] = useState<ItemId>('');
   const [receiveQty, setReceiveQty] = useState('');
   const [receiveCounterparty, setReceiveCounterparty] = useState('');
   const [receiveNote, setReceiveNote] = useState('');
-  const [receiveFeedback, setReceiveFeedback] = useState<string | null>(null);
+  const [receiveFeedback, setReceiveFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [issueQty, setIssueQty] = useState('');
   const [issueCounterparty, setIssueCounterparty] = useState('');
@@ -35,10 +38,7 @@ export function FieldView() {
 
   if (loading || !replica) {
     return (
-      <section>
-        <h2>Field</h2>
-        <p>Loading local replica...</p>
-      </section>
+      <div style={{ color: colors.textMuted, padding: space.lg }}>{t('loadingReplica')}</div>
     );
   }
 
@@ -63,12 +63,12 @@ export function FieldView() {
     setReceiveFeedback(null);
 
     if (!activeItemId) {
-      setReceiveFeedback(getEngineErrorMessage('UNKNOWN_ITEM'));
+      setReceiveFeedback({ ok: false, msg: getEngineErrorMessage('UNKNOWN_ITEM', lang) });
       return;
     }
     const qty = parsePositiveIntQty(receiveQty);
     if (qty === null) {
-      setReceiveFeedback(getEngineErrorMessage('INVALID_QTY'));
+      setReceiveFeedback({ ok: false, msg: getEngineErrorMessage('INVALID_QTY', lang) });
       return;
     }
 
@@ -81,14 +81,14 @@ export function FieldView() {
     );
 
     if (!res.ok) {
-      setReceiveFeedback(getEngineErrorMessage(res.error));
+      setReceiveFeedback({ ok: false, msg: getEngineErrorMessage(res.error, lang) });
       return;
     }
 
     setReceiveQty('');
     setReceiveCounterparty('');
     setReceiveNote('');
-    setReceiveFeedback('Receipt recorded offline.');
+    setReceiveFeedback({ ok: true, msg: t('field_receiptRecorded') });
   }
 
   async function handleIssue(e: FormEvent) {
@@ -98,12 +98,12 @@ export function FieldView() {
     setTopUpNotice(null);
 
     if (!activeItemId) {
-      setIssueError(getEngineErrorMessage('UNKNOWN_ITEM'));
+      setIssueError(getEngineErrorMessage('UNKNOWN_ITEM', lang));
       return;
     }
     const qty = parsePositiveIntQty(issueQty);
     if (qty === null) {
-      setIssueError(getEngineErrorMessage('INVALID_QTY'));
+      setIssueError(getEngineErrorMessage('INVALID_QTY', lang));
       return;
     }
 
@@ -116,7 +116,7 @@ export function FieldView() {
     );
 
     if (!res.ok) {
-      setIssueError(getEngineErrorMessage(res.error));
+      setIssueError(getEngineErrorMessage(res.error, lang));
       if (res.error === 'INSUFFICIENT_RIGHTS') {
         setInsufficientRights(activeLocalRights);
       }
@@ -135,9 +135,7 @@ export function FieldView() {
       (req) => req.el.itemId === activeItemId && req.el.requester === replica?.nodeId,
     );
     setTopUpNotice(
-      alreadyOpen
-        ? 'A top-up request for this item is already open in the queue. Sync with Command Center to receive quota.'
-        : 'Quota is below the requested issue. Ask Command Center coordinator to transfer rights during next sync.',
+      alreadyOpen ? t('field_topUpAlreadyOpen') : t('field_topUpAdvice'),
     );
   }
 
@@ -146,15 +144,18 @@ export function FieldView() {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 20 }}>
+    <div style={{ display: 'grid', gap: space.xl }}>
+      {/* Header */}
       <div>
-        <h2 style={{ marginBottom: 8 }}>Field — Stock &amp; Distribution</h2>
+        <h1 style={{ margin: 0, fontSize: font.sizeXl, fontWeight: font.weightBold }}>{t('field_title')}</h1>
+      </div>
+
+      {/* Item selector cards */}
+      <div style={card}>
         {itemEntries.length === 0 ? (
-          <p style={{ color: '#4b5563' }}>
-            No items on this device yet. Create items in Command Center or sync with a peer.
-          </p>
+          <p style={{ color: colors.textMuted, margin: 0 }}>{t('field_noItems')}</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: space.sm }}>
             {itemEntries.map(([id, item]) => {
               const summary = itemSummary(replica.state, id);
               const myRights = summary?.rights[replica.nodeId] ?? 0;
@@ -163,37 +164,38 @@ export function FieldView() {
                 <li
                   key={id}
                   style={{
-                    padding: 10,
-                    border: isSelected ? '2px solid #0f766e' : '1px solid #d1d5db',
-                    borderRadius: 6,
+                    padding: space.md,
+                    border: isSelected ? `2px solid ${colors.teal}` : `1px solid ${colors.borderLight}`,
+                    backgroundColor: isSelected ? colors.tealLight : '#ffffff',
+                    borderRadius: radius.md,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: 8,
+                    gap: space.sm,
+                    flexWrap: 'wrap',
                   }}
                 >
                   <div>
-                    <strong>{item.meta.name}</strong> ({item.meta.unit}) ·{' '}
-                    <span>Total: {summary?.value ?? 0}</span> ·{' '}
-                    <span>Local quota: {myRights}</span>
+                    <strong style={{ fontSize: font.sizeMd }}>{item.meta.name}</strong>{' '}
+                    <span style={{ color: colors.textMuted, fontSize: font.sizeSm }}>({item.meta.unit})</span> ·{' '}
+                    <span style={{ fontSize: font.sizeMd }}>
+                      {t('field_total')}: <strong>{summary?.value ?? 0}</strong>
+                    </span> ·{' '}
+                    <span style={{ fontSize: font.sizeMd }}>
+                      {t('field_localQuota')}: <strong>{myRights}</strong>
+                    </span>
                     {summary && summary.deficit > 0 && (
-                      <span
-                        style={{
-                          marginLeft: 8,
-                          padding: '2px 6px',
-                          backgroundColor: '#fee2e2',
-                          color: '#991b1b',
-                          borderRadius: 4,
-                          fontSize: 12,
-                          fontWeight: 600,
-                        }}
-                      >
-                        Deficit {summary.deficit}
+                      <span style={{ ...badge.deficit, marginLeft: space.sm }}>
+                        {t('dashboard_deficit')} {summary.deficit}
                       </span>
                     )}
                   </div>
-                  <button type="button" onClick={() => setSelectedItemId(id)}>
-                    {isSelected ? 'Selected' : 'Select'}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItemId(id)}
+                    style={isSelected ? btn.primary : btn.secondary}
+                  >
+                    {isSelected ? t('field_selected') : t('field_select')}
                   </button>
                 </li>
               );
@@ -202,15 +204,15 @@ export function FieldView() {
         )}
       </div>
 
+      {/* Receive & Issue forms */}
       {activeItem && (
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-          <form
-            onSubmit={(e) => void handleReceive(e)}
-            style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 8 }}
-          >
-            <h3 style={{ margin: 0, fontSize: 16 }}>Receive Goods ({activeItem.meta.name})</h3>
-            <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-              <span>Quantity ({activeItem.meta.unit})</span>
+        <div style={{ display: 'grid', gap: space.md, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+          <form onSubmit={(e) => void handleReceive(e)} style={{ ...card, display: 'grid', gap: space.md }}>
+            <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>
+              {t('field_receiveGoods')} ({activeItem.meta.name})
+            </h2>
+            <label style={labelStyle}>
+              <span>{t('field_quantity')} ({activeItem.meta.unit})</span>
               <input
                 type="number"
                 min={1}
@@ -218,37 +220,43 @@ export function FieldView() {
                 value={receiveQty}
                 onChange={(e) => setReceiveQty(e.target.value)}
                 placeholder="e.g. 20"
+                style={inputStyle}
               />
             </label>
-            <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-              <span>Source / Counterparty (optional)</span>
+            <label style={labelStyle}>
+              <span>{t('field_source')}</span>
               <input
                 type="text"
                 maxLength={80}
                 value={receiveCounterparty}
                 onChange={(e) => setReceiveCounterparty(e.target.value)}
+                style={inputStyle}
               />
             </label>
-            <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-              <span>Note (optional)</span>
+            <label style={labelStyle}>
+              <span>{t('field_note')}</span>
               <input
                 type="text"
                 maxLength={200}
                 value={receiveNote}
                 onChange={(e) => setReceiveNote(e.target.value)}
+                style={inputStyle}
               />
             </label>
-            {receiveFeedback && <div style={{ fontSize: 13 }}>{receiveFeedback}</div>}
-            <button type="submit">Record Receipt</button>
+            {receiveFeedback && (
+              <div style={receiveFeedback.ok ? alert.success : alert.danger}>{receiveFeedback.msg}</div>
+            )}
+            <button type="submit" style={btn.primary}>
+              {t('field_recordReceipt')}
+            </button>
           </form>
 
-          <form
-            onSubmit={(e) => void handleIssue(e)}
-            style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 8 }}
-          >
-            <h3 style={{ margin: 0, fontSize: 16 }}>Issue Goods ({activeItem.meta.name})</h3>
-            <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-              <span>Quantity ({activeItem.meta.unit})</span>
+          <form onSubmit={(e) => void handleIssue(e)} style={{ ...card, display: 'grid', gap: space.md }}>
+            <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>
+              {t('field_issueGoods')} ({activeItem.meta.name})
+            </h2>
+            <label style={labelStyle}>
+              <span>{t('field_quantity')} ({activeItem.meta.unit})</span>
               <input
                 type="number"
                 min={1}
@@ -256,43 +264,48 @@ export function FieldView() {
                 value={issueQty}
                 onChange={(e) => setIssueQty(e.target.value)}
                 placeholder="e.g. 10"
+                style={inputStyle}
               />
             </label>
-            <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-              <span>Recipient / Counterparty (optional)</span>
+            <label style={labelStyle}>
+              <span>{t('field_recipient')}</span>
               <input
                 type="text"
                 maxLength={80}
                 value={issueCounterparty}
                 onChange={(e) => setIssueCounterparty(e.target.value)}
+                style={inputStyle}
               />
             </label>
-            <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-              <span>Note (optional)</span>
+            <label style={labelStyle}>
+              <span>{t('field_note')}</span>
               <input
                 type="text"
                 maxLength={200}
                 value={issueNote}
                 onChange={(e) => setIssueNote(e.target.value)}
+                style={inputStyle}
               />
             </label>
 
             {issueError && (
-              <div role="alert" style={{ color: '#991b1b', fontSize: 13 }}>
+              <div role="alert" style={alert.danger}>
                 <div>{issueError}</div>
                 {insufficientRights !== null && (
-                  <div style={{ marginTop: 6, display: 'grid', gap: 6 }}>
-                    <div>Remaining local rights: {insufficientRights}</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button type="button" onClick={handleRequestTopUp}>
-                        Request top-up
+                  <div style={{ marginTop: space.sm, display: 'grid', gap: space.sm }}>
+                    <div>
+                      {t('field_remainingRights')}: <strong>{insufficientRights}</strong>
+                    </div>
+                    <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap' }}>
+                      <button type="button" onClick={handleRequestTopUp} style={btn.secondary}>
+                        {t('field_requestTopUp')}
                       </button>
                       <button
                         type="button"
                         onClick={() => setShowOverrideDialog(true)}
-                        style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: 4 }}
+                        style={{ ...btn.primary, backgroundColor: colors.danger }}
                       >
-                        Emergency override
+                        {t('field_emergencyOverride')}
                       </button>
                     </div>
                   </div>
@@ -300,9 +313,11 @@ export function FieldView() {
               </div>
             )}
 
-            {topUpNotice && <div style={{ fontSize: 13, color: '#92400e' }}>{topUpNotice}</div>}
+            {topUpNotice && <div style={alert.warning}>{topUpNotice}</div>}
 
-            <button type="submit">Record Issue</button>
+            <button type="submit" style={btn.primary}>
+              {t('field_recordIssue')}
+            </button>
           </form>
         </div>
       )}
@@ -326,52 +341,66 @@ export function FieldView() {
         />
       )}
 
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <h3 style={{ margin: 0, fontSize: 16 }}>Distribution Log</h3>
-          <label style={{ fontSize: 13 }}>
-            Filter:{' '}
+      {/* Distribution Log */}
+      <div style={card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.md, flexWrap: 'wrap', gap: space.sm }}>
+          <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>
+            {t('field_distributionLog')}
+          </h2>
+          <label style={{ fontSize: font.sizeMd, display: 'flex', alignItems: 'center', gap: space.sm }}>
+            <span style={{ color: colors.textMuted }}>{t('field_filter')}:</span>
             <select
               value={logFilter}
               onChange={(e) => setLogFilter(e.target.value as LogFilter)}
+              style={{ ...inputStyle, width: 'auto', minHeight: 36 }}
             >
-              <option value="all">All</option>
-              <option value="receive">Receive</option>
-              <option value="issue">Issue</option>
-              <option value="override_issue">Emergency Override</option>
+              <option value="all">{t('field_filterAll')}</option>
+              <option value="receive">{t('field_filterReceive')}</option>
+              <option value="issue">{t('field_filterIssue')}</option>
+              <option value="override_issue">{t('field_filterOverride')}</option>
             </select>
           </label>
         </div>
 
         {logEntries.length === 0 ? (
-          <p style={{ color: '#4b5563', fontSize: 13 }}>No distribution entries.</p>
+          <p style={{ color: colors.textMuted, fontSize: font.sizeMd, margin: 0 }}>{t('field_noLogEntries')}</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: space.sm }}>
             {logEntries.map(({ tag, el }) => {
               const isOverride = el.kind === 'override_issue';
               return (
                 <li
                   key={tag}
                   style={{
-                    padding: 8,
-                    border: isOverride ? '1px solid #dc2626' : '1px solid #e5e7eb',
-                    backgroundColor: isOverride ? '#fef2f2' : '#ffffff',
-                    borderRadius: 4,
+                    padding: space.md,
+                    border: isOverride ? `1px solid ${colors.danger}` : `1px solid ${colors.borderLight}`,
+                    backgroundColor: isOverride ? colors.dangerBg : '#ffffff',
+                    borderRadius: radius.md,
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    gap: 8,
-                    fontSize: 13,
+                    gap: space.sm,
+                    fontSize: font.sizeMd,
+                    flexWrap: 'wrap',
                   }}
                 >
                   <div>
-                    <strong>{el.kind}</strong> · {el.itemId} · qty: {el.qty} · by {el.by} (c:{el.ts.c})
+                    <strong>{el.kind}</strong> · <code>{el.itemId}</code> · {t('qty')}: {el.qty} · {t('by')}{' '}
+                    <code>{el.by}</code> ({t('clock')}:{el.ts.c})
                     {el.counterparty && <span> · {el.counterparty}</span>}
-                    {el.reason && <div style={{ color: '#991b1b' }}>Reason: {el.reason}</div>}
+                    {el.reason && (
+                      <div style={{ color: colors.dangerText, marginTop: 4 }}>
+                        {t('field_reason')}: {el.reason}
+                      </div>
+                    )}
                   </div>
                   {!isOverride && (
-                    <button type="button" onClick={() => void handleVoid(tag)}>
-                      Void
+                    <button
+                      type="button"
+                      onClick={() => void handleVoid(tag)}
+                      style={{ ...btn.secondary, padding: '4px 12px', minHeight: 32, fontSize: font.sizeSm }}
+                    >
+                      {t('field_void')}
                     </button>
                   )}
                 </li>
@@ -380,6 +409,6 @@ export function FieldView() {
           </ul>
         )}
       </div>
-    </section>
+    </div>
   );
 }

@@ -9,9 +9,11 @@ import {
   type NodeId,
 } from '@resiliolog/crdt-core';
 import { useEffect, useState, type FormEvent } from 'react';
+import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
 import { listCursors, type CursorRow } from '../storage/db';
 import { getEngineErrorMessage, parsePositiveIntQty } from './error-messages';
+import { alert, badge, btn, card, colors, font, input as inputStyle, label as labelStyle, radius, space } from './styles';
 
 const CATEGORIES: readonly Category[] = [
   'food',
@@ -24,6 +26,7 @@ const CATEGORIES: readonly Category[] = [
 
 export function CommandCenterView() {
   const { replica, loading, run } = useReplica();
+  const { t, lang } = useLang();
 
   const [cursors, setCursors] = useState<readonly CursorRow[]>([]);
 
@@ -31,12 +34,12 @@ export function CommandCenterView() {
   const [itemUnit, setItemUnit] = useState('kg');
   const [itemCategory, setItemCategory] = useState<Category>('food');
   const [initialQtyStr, setInitialQtyStr] = useState('0');
-  const [createFeedback, setCreateFeedback] = useState<string | null>(null);
+  const [createFeedback, setCreateFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   const [xferItemId, setXferItemId] = useState<ItemId>('');
   const [xferTargetNode, setXferTargetNode] = useState<NodeId>('');
   const [xferQtyStr, setXferQtyStr] = useState('');
-  const [xferFeedback, setXferFeedback] = useState<string | null>(null);
+  const [xferFeedback, setXferFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -50,10 +53,7 @@ export function CommandCenterView() {
 
   if (loading || !replica) {
     return (
-      <section>
-        <h2>Command Center</h2>
-        <p>Loading local replica...</p>
-      </section>
+      <div style={{ color: colors.textMuted, padding: space.lg }}>{t('loadingReplica')}</div>
     );
   }
 
@@ -70,7 +70,6 @@ export function CommandCenterView() {
     .reverse();
   const openTopUps = orsElements(replica.state.topUpQueue);
 
-  // Collect known peer nodeIds from quota.R, topUpQueue, and cursors
   const knownNodes = new Set<NodeId>();
   for (const [, item] of itemEntries) {
     for (const from of Object.keys(item.quota.R)) {
@@ -97,18 +96,18 @@ export function CommandCenterView() {
     const name = itemName.trim();
     const unit = itemUnit.trim();
     if (!name || !unit) {
-      setCreateFeedback('Item name and unit are required.');
+      setCreateFeedback({ ok: false, msg: t('cc_itemNameUnit') });
       return;
     }
 
     const trimmedQty = initialQtyStr.trim();
     if (!/^[0-9]+$/.test(trimmedQty)) {
-      setCreateFeedback(getEngineErrorMessage('INVALID_QTY'));
+      setCreateFeedback({ ok: false, msg: getEngineErrorMessage('INVALID_QTY', lang) });
       return;
     }
     const initialQty = Number(trimmedQty);
     if (!Number.isSafeInteger(initialQty) || initialQty < 0) {
-      setCreateFeedback(getEngineErrorMessage('INVALID_QTY'));
+      setCreateFeedback({ ok: false, msg: getEngineErrorMessage('INVALID_QTY', lang) });
       return;
     }
 
@@ -127,14 +126,14 @@ export function CommandCenterView() {
     });
 
     if (!res.ok) {
-      setCreateFeedback(getEngineErrorMessage(res.error));
+      setCreateFeedback({ ok: false, msg: getEngineErrorMessage(res.error, lang) });
       return;
     }
 
     setItemName('');
     setInitialQtyStr('0');
     setXferItemId(createdItemId);
-    setCreateFeedback(`Created item "${name}" (${createdItemId}).`);
+    setCreateFeedback({ ok: true, msg: `${t('cc_created')} "${name}" (${createdItemId}).` });
   }
 
   async function handleTransfer(e: FormEvent) {
@@ -142,28 +141,28 @@ export function CommandCenterView() {
     setXferFeedback(null);
 
     if (!activeXferItemId) {
-      setXferFeedback(getEngineErrorMessage('UNKNOWN_ITEM'));
+      setXferFeedback({ ok: false, msg: getEngineErrorMessage('UNKNOWN_ITEM', lang) });
       return;
     }
     const toNode = xferTargetNode.trim();
     if (!/^[a-z0-9]{4,16}$/.test(toNode)) {
-      setXferFeedback('Enter a valid target nodeId (4-16 lowercase alphanumeric chars).');
+      setXferFeedback({ ok: false, msg: t('cc_invalidNodeId') });
       return;
     }
     const qty = parsePositiveIntQty(xferQtyStr);
     if (qty === null) {
-      setXferFeedback(getEngineErrorMessage('INVALID_QTY'));
+      setXferFeedback({ ok: false, msg: getEngineErrorMessage('INVALID_QTY', lang) });
       return;
     }
 
     const res = await run((r) => transferRights(r, activeXferItemId, toNode, qty));
     if (!res.ok) {
-      setXferFeedback(getEngineErrorMessage(res.error));
+      setXferFeedback({ ok: false, msg: getEngineErrorMessage(res.error, lang) });
       return;
     }
 
     setXferQtyStr('');
-    setXferFeedback(`Transferred ${qty} rights to ${toNode}.`);
+    setXferFeedback({ ok: true, msg: `${t('cc_transferred')} ${qty} ${t('cc_rightsTo')} ${toNode}.` });
   }
 
   async function handleResolveTopUp(tag: string) {
@@ -171,47 +170,45 @@ export function CommandCenterView() {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-        <h2 style={{ margin: 0 }}>Command Center</h2>
-        <span
-          style={{
-            padding: '4px 8px',
-            borderRadius: 4,
-            fontSize: 12,
-            fontWeight: 600,
-            backgroundColor: hasUnsyncedChanges ? '#fef3c7' : '#dcfce7',
-            color: hasUnsyncedChanges ? '#92400e' : '#166534',
-          }}
-        >
-          {hasUnsyncedChanges ? `Unsynced changes (clock ${replica.clock})` : 'All changes synced'}
+    <div style={{ display: 'grid', gap: space.xl }}>
+      {/* Header + unsynced badge */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: space.sm }}>
+        <h1 style={{ margin: 0, fontSize: font.sizeXl, fontWeight: font.weightBold }}>{t('cc_title')}</h1>
+        <span style={hasUnsyncedChanges ? badge.warning : badge.success}>
+          {hasUnsyncedChanges
+            ? `${t('cc_unsyncedChanges')} ${replica.clock})`
+            : t('cc_allSynced')}
         </span>
       </div>
 
-      {/* Sync status per peer */}
-      <div style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6 }}>
-        <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 15 }}>Peer Sync Status</h3>
+      {/* Peer Sync Status */}
+      <div style={card}>
+        <h2 style={{ marginTop: 0, marginBottom: space.md, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>
+          {t('cc_peerSync')}
+        </h2>
         {cursors.length === 0 ? (
-          <p style={{ margin: 0, fontSize: 13, color: '#4b5563' }}>No peers synced yet.</p>
+          <p style={{ margin: 0, fontSize: font.sizeMd, color: colors.textMuted }}>{t('cc_noPeers')}</p>
         ) : (
-          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13 }}>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: font.sizeMd, display: 'grid', gap: 6 }}>
             {cursors.map((c) => (
               <li key={c.peerId}>
-                <code>{c.peerId}</code> · cursor until: {c.until} · last sync:{' '}
-                {c.lastSyncAt ?? 'unknown'}
+                <code>{c.peerId}</code> · {t('cc_cursorUntil')}: {c.until} · {t('cc_lastSync')}:{' '}
+                {c.lastSyncAt ?? t('cc_unknown')}
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* Merged totals & per-node rights allocation table */}
-      <div>
-        <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 16 }}>Merged Inventory &amp; Quota Allocation</h3>
+      {/* Merged Inventory & Quota Allocation */}
+      <div style={card}>
+        <h2 style={{ marginTop: 0, marginBottom: space.md, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>
+          {t('cc_mergedInventory')}
+        </h2>
         {itemEntries.length === 0 ? (
-          <p style={{ color: '#4b5563', fontSize: 13 }}>No items recorded yet.</p>
+          <p style={{ color: colors.textMuted, fontSize: font.sizeMd, margin: 0 }}>{t('cc_noItems')}</p>
         ) : (
-          <div style={{ display: 'grid', gap: 12 }}>
+          <div style={{ display: 'grid', gap: space.md }}>
             {itemEntries.map(([id, item]) => {
               const summary = itemSummary(replica.state, id);
               if (!summary) return null;
@@ -219,56 +216,60 @@ export function CommandCenterView() {
               const nodeIds = Object.keys(summary.rights).sort();
 
               return (
-                <div key={id} style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                <div
+                  key={id}
+                  style={{
+                    padding: space.md,
+                    border: `1px solid ${colors.borderLight}`,
+                    borderRadius: radius.md,
+                    background: '#fafafa',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: space.sm }}>
                     <div>
-                      <strong>{item.meta.name}</strong> ({item.meta.unit}, {item.meta.category}) ·{' '}
-                      <code>{id}</code>
+                      <strong style={{ fontSize: font.sizeMd }}>{item.meta.name}</strong>{' '}
+                      <span style={{ color: colors.textMuted, fontSize: font.sizeSm }}>
+                        ({item.meta.unit}, {item.meta.category})
+                      </span>{' '}
+                      · <code style={{ fontSize: font.sizeSm }}>{id}</code>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 13 }}>
-                        Total: <strong>{summary.value}</strong> (In: {summary.ledgerIn}, Out: {summary.ledgerOut})
+                    <div style={{ display: 'flex', gap: space.sm, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: font.sizeMd }}>
+                        {t('cc_total')}: <strong>{summary.value}</strong> ({t('cc_in')}: {summary.ledgerIn}, {t('cc_out')}: {summary.ledgerOut})
                       </span>
                       {(summary.deficit > 0 || itemOverridesCount > 0) && (
-                        <span
-                          style={{
-                            padding: '2px 8px',
-                            backgroundColor: '#fee2e2',
-                            color: '#991b1b',
-                            borderRadius: 4,
-                            fontSize: 12,
-                            fontWeight: 600,
-                          }}
-                        >
-                          {itemOverridesCount} overrides · deficit {summary.deficit}
+                        <span style={badge.deficit}>
+                          {itemOverridesCount} {t('cc_overrides')} · {t('cc_deficit')} {summary.deficit}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, fontSize: 13 }}>
-                    <thead>
-                      <tr style={{ textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
-                        <th style={{ padding: '4px 6px' }}>Node</th>
-                        <th style={{ padding: '4px 6px' }}>Local Rights</th>
-                        <th style={{ padding: '4px 6px' }}>Consumed (U)</th>
-                        <th style={{ padding: '4px 6px' }}>Override (O)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {nodeIds.map((node) => (
-                        <tr key={node} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                          <td style={{ padding: '4px 6px' }}>
-                            <code>{node}</code>
-                            {node === replica.nodeId ? ' (self)' : ''}
-                          </td>
-                          <td style={{ padding: '4px 6px' }}>{summary.rights[node] ?? 0}</td>
-                          <td style={{ padding: '4px 6px' }}>{item.quota.U[node] ?? 0}</td>
-                          <td style={{ padding: '4px 6px' }}>{item.quota.O[node] ?? 0}</td>
+                  <div style={{ overflowX: 'auto', marginTop: space.sm }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: font.sizeSm }}>
+                      <thead>
+                        <tr style={{ textAlign: 'left', borderBottom: `1px solid ${colors.borderMedium}`, color: colors.textMuted }}>
+                          <th style={{ padding: '6px 8px' }}>{t('cc_node')}</th>
+                          <th style={{ padding: '6px 8px' }}>{t('cc_localRights')}</th>
+                          <th style={{ padding: '6px 8px' }}>{t('cc_consumed')}</th>
+                          <th style={{ padding: '6px 8px' }}>{t('cc_override')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {nodeIds.map((node) => (
+                          <tr key={node} style={{ borderBottom: `1px solid ${colors.borderLight}` }}>
+                            <td style={{ padding: '6px 8px' }}>
+                              <code>{node}</code>
+                              {node === replica.nodeId ? ` ${t('cc_self')}` : ''}
+                            </td>
+                            <td style={{ padding: '6px 8px', fontWeight: font.weightSemibold }}>{summary.rights[node] ?? 0}</td>
+                            <td style={{ padding: '6px 8px' }}>{item.quota.U[node] ?? 0}</td>
+                            <td style={{ padding: '6px 8px' }}>{item.quota.O[node] ?? 0}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               );
             })}
@@ -276,38 +277,38 @@ export function CommandCenterView() {
         )}
       </div>
 
-      {/* Create item & Transfer rights */}
-      <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-        <form
-          onSubmit={(e) => void handleCreateItem(e)}
-          style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 8 }}
-        >
-          <h3 style={{ margin: 0, fontSize: 16 }}>Create Item</h3>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Name</span>
+      {/* Create Item & Allocate Quota */}
+      <div style={{ display: 'grid', gap: space.md, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
+        <form onSubmit={(e) => void handleCreateItem(e)} style={{ ...card, display: 'grid', gap: space.md }}>
+          <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>{t('cc_createItem')}</h2>
+          <label style={labelStyle}>
+            <span>{t('cc_name')}</span>
             <input
               type="text"
               maxLength={60}
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
               placeholder="e.g. Rice"
+              style={inputStyle}
             />
           </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Unit</span>
+          <label style={labelStyle}>
+            <span>{t('cc_unit')}</span>
             <input
               type="text"
               maxLength={16}
               value={itemUnit}
               onChange={(e) => setItemUnit(e.target.value)}
               placeholder="e.g. kg"
+              style={inputStyle}
             />
           </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Category</span>
+          <label style={labelStyle}>
+            <span>{t('cc_category')}</span>
             <select
               value={itemCategory}
               onChange={(e) => setItemCategory(e.target.value as Category)}
+              style={inputStyle}
             >
               {CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
@@ -316,31 +317,32 @@ export function CommandCenterView() {
               ))}
             </select>
           </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Initial Quantity (&ge; 0)</span>
+          <label style={labelStyle}>
+            <span>{t('cc_initialQty')}</span>
             <input
               type="number"
               min={0}
               step={1}
               value={initialQtyStr}
               onChange={(e) => setInitialQtyStr(e.target.value)}
+              style={inputStyle}
             />
           </label>
-          {createFeedback && <div style={{ fontSize: 13 }}>{createFeedback}</div>}
-          <button type="submit">Create Item</button>
+          {createFeedback && (
+            <div style={createFeedback.ok ? alert.success : alert.danger}>{createFeedback.msg}</div>
+          )}
+          <button type="submit" style={btn.primary}>{t('cc_createBtn')}</button>
         </form>
 
-        <form
-          onSubmit={(e) => void handleTransfer(e)}
-          style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 8 }}
-        >
-          <h3 style={{ margin: 0, fontSize: 16 }}>Allocate Quota (Transfer Rights)</h3>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Item</span>
+        <form onSubmit={(e) => void handleTransfer(e)} style={{ ...card, display: 'grid', gap: space.md }}>
+          <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>{t('cc_allocateQuota')}</h2>
+          <label style={labelStyle}>
+            <span>{t('cc_item')}</span>
             <select
               value={activeXferItemId}
               onChange={(e) => setXferItemId(e.target.value)}
               disabled={itemEntries.length === 0}
+              style={inputStyle}
             >
               {itemEntries.map(([id, item]) => (
                 <option key={id} value={id}>
@@ -349,14 +351,15 @@ export function CommandCenterView() {
               ))}
             </select>
           </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Target Node ID</span>
+          <label style={labelStyle}>
+            <span>{t('cc_targetNode')}</span>
             <input
               type="text"
               list="known-peer-nodes"
               value={xferTargetNode}
               onChange={(e) => setXferTargetNode(e.target.value)}
               placeholder="e.g. bbbb2222"
+              style={inputStyle}
             />
             <datalist id="known-peer-nodes">
               {Array.from(knownNodes).map((n) => (
@@ -364,8 +367,8 @@ export function CommandCenterView() {
               ))}
             </datalist>
           </label>
-          <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-            <span>Quantity (&ge; 1)</span>
+          <label style={labelStyle}>
+            <span>{t('cc_qty')}</span>
             <input
               type="number"
               min={1}
@@ -373,43 +376,48 @@ export function CommandCenterView() {
               value={xferQtyStr}
               onChange={(e) => setXferQtyStr(e.target.value)}
               placeholder="e.g. 20"
+              style={inputStyle}
             />
           </label>
-          {xferFeedback && <div style={{ fontSize: 13 }}>{xferFeedback}</div>}
-          <button type="submit" disabled={itemEntries.length === 0}>
-            Transfer Rights
+          {xferFeedback && (
+            <div style={xferFeedback.ok ? alert.success : alert.danger}>{xferFeedback.msg}</div>
+          )}
+          <button type="submit" disabled={itemEntries.length === 0} style={btn.primary}>
+            {t('cc_transferBtn')}
           </button>
         </form>
       </div>
 
-      {/* Top-up queue */}
-      <div>
-        <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 16 }}>
-          Open Top-Up Queue ({openTopUps.length})
-        </h3>
+      {/* Top-Up Queue */}
+      <div style={card}>
+        <h2 style={{ marginTop: 0, marginBottom: space.md, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>
+          {t('cc_openTopUps')} ({openTopUps.length})
+        </h2>
         {openTopUps.length === 0 ? (
-          <p style={{ color: '#4b5563', fontSize: 13 }}>No open top-up requests.</p>
+          <p style={{ color: colors.textMuted, fontSize: font.sizeMd, margin: 0 }}>{t('cc_noTopUps')}</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: space.sm }}>
             {openTopUps.map(({ tag, el }) => (
               <li
                 key={tag}
                 style={{
-                  padding: 8,
-                  border: '1px solid #f59e0b',
-                  backgroundColor: '#fffbeb',
-                  borderRadius: 4,
+                  ...alert.warning,
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  fontSize: 13,
+                  flexWrap: 'wrap',
+                  gap: space.sm,
                 }}
               >
                 <span>
-                  Item <code>{el.itemId}</code> requested by <code>{el.requester}</code> (c:{el.ts.c})
+                  {t('cc_item')} <code>{el.itemId}</code> {t('cc_requestedBy')} <code>{el.requester}</code> ({t('clock')}:{el.ts.c})
                 </span>
-                <button type="button" onClick={() => void handleResolveTopUp(tag)}>
-                  Resolve
+                <button
+                  type="button"
+                  onClick={() => void handleResolveTopUp(tag)}
+                  style={{ ...btn.primary, padding: '6px 14px', minHeight: 34, fontSize: font.sizeSm }}
+                >
+                  {t('cc_resolve')}
                 </button>
               </li>
             ))}
@@ -417,36 +425,27 @@ export function CommandCenterView() {
         )}
       </div>
 
-      {/* Override audit list */}
-      <div>
-        <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: 16, color: '#991b1b' }}>
-          Emergency Override Audit Log ({overrideEntries.length})
-        </h3>
+      {/* Override Audit Log */}
+      <div style={card}>
+        <h2 style={{ marginTop: 0, marginBottom: space.md, fontSize: font.sizeLg, fontWeight: font.weightSemibold, color: colors.dangerText }}>
+          {t('cc_overrideAudit')} ({overrideEntries.length})
+        </h2>
         {overrideEntries.length === 0 ? (
-          <p style={{ color: '#4b5563', fontSize: 13 }}>No emergency overrides recorded.</p>
+          <p style={{ color: colors.textMuted, fontSize: font.sizeMd, margin: 0 }}>{t('cc_noOverrides')}</p>
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 6 }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: space.sm }}>
             {overrideEntries.map(({ tag, el }) => (
-              <li
-                key={tag}
-                style={{
-                  padding: 8,
-                  border: '1px solid #dc2626',
-                  backgroundColor: '#fef2f2',
-                  borderRadius: 4,
-                  fontSize: 13,
-                }}
-              >
+              <li key={tag} style={alert.danger}>
                 <div>
-                  <strong>{el.itemId}</strong> · qty: {el.qty} · by <code>{el.by}</code> (c:{el.ts.c})
+                  <strong>{el.itemId}</strong> · {t('qty')}: {el.qty} · {t('by')} <code>{el.by}</code> ({t('clock')}:{el.ts.c})
                   {el.wallTime && <span> · {el.wallTime}</span>}
                 </div>
-                <div style={{ color: '#991b1b' }}>Reason: {el.reason}</div>
+                <div style={{ marginTop: 4 }}>{t('field_reason')}: {el.reason}</div>
               </li>
             ))}
           </ul>
         )}
       </div>
-    </section>
+    </div>
   );
 }
