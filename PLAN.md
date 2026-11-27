@@ -35,7 +35,7 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 - [x] **B-09** Item operations: `createItem`, `receive`, `issue`, `transferRights`, `emergencyIssue` (ledger + quota + log updated atomically) *(done: implemented `ops.ts` + `queries.ts` (`itemSummary`) + 5 tests including B5, override, void, error codes)*
 - [x] **B-10** Top-up trigger: after `issue`, if remainingRatio ≤ 0.15 → enqueue request (deduped) *(done: integrated in `issue` + `resolveTopUp` + B6 test)*
 - [x] **B-11** `packages/sync`: `makeDelta`, `applyDelta`, envelope, crc32, deflate+base64url, QR chunk/reassemble *(done: implemented `schemas.ts`, `canonical-json.ts`, `crc32.ts`, `delta.ts`, `envelope.ts`, `chunks.ts` + W1–W8, C2, C3)*
-- [ ] **B-12** Public API doc for Role C (`packages/*/README.md` or `docs/API.md`) — **by 12:00** so C can wire UI
+- [x] **B-12** Public API doc for Role C (`packages/*/README.md` or `docs/API.md`) — **by 12:00** so C can wire UI *(done: created `docs/API.md` with signatures, preconditions, error codes, lifecycle, sync flow, and 3 verified examples)*
 - [x] **B-13** Integration test: 2 replicas, partition → divergent ops → exchange deltas both ways → identical canonical state *(done: verified in `packages/sync/test/delta.test.ts` over `encode -> chunks -> collector -> decode -> applyDelta`)*
 - [ ] **B-14** FREEZE checklist: all P0 done, tests green, tag `v1-freeze`, update `docs/CLAIMS.md`
 - Role C dependency: UI forms call B-09 API; Dexie persistence per ARCHITECTURE §4.
