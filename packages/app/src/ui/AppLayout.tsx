@@ -1,5 +1,16 @@
 import { type ReactNode } from 'react';
 import { useLang } from '../i18n/useLang';
+import {
+  IconClipboardList,
+  IconCommand,
+  IconDashboard,
+  IconFileText,
+  IconKey,
+  IconMenu,
+  IconPackage,
+  IconRefresh,
+  IconSettings,
+} from './Icons';
 import { colors, font, layout, radius, space } from './styles';
 
 export type Page =
@@ -14,17 +25,17 @@ export type Page =
 interface NavItem {
   id: Page;
   labelKey: string;
-  icon: string;
+  renderIcon: (color: string) => ReactNode;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', labelKey: 'nav_dashboard', icon: '⊞' },
-  { id: 'field', labelKey: 'nav_field', icon: '📦' },
-  { id: 'command-center', labelKey: 'nav_commandCenter', icon: '🎯' },
-  { id: 'inventory', labelKey: 'nav_inventory', icon: '📋' },
-  { id: 'sync', labelKey: 'nav_sync', icon: '🔄' },
-  { id: 'activity-log', labelKey: 'nav_activityLog', icon: '📝' },
-  { id: 'settings', labelKey: 'nav_settings', icon: '⚙️' },
+  { id: 'dashboard', labelKey: 'nav_dashboard', renderIcon: (c) => <IconDashboard size={18} color={c} /> },
+  { id: 'field', labelKey: 'nav_field', renderIcon: (c) => <IconPackage size={18} color={c} /> },
+  { id: 'command-center', labelKey: 'nav_commandCenter', renderIcon: (c) => <IconCommand size={18} color={c} /> },
+  { id: 'inventory', labelKey: 'nav_inventory', renderIcon: (c) => <IconClipboardList size={18} color={c} /> },
+  { id: 'sync', labelKey: 'nav_sync', renderIcon: (c) => <IconRefresh size={18} color={c} /> },
+  { id: 'activity-log', labelKey: 'nav_activityLog', renderIcon: (c) => <IconFileText size={18} color={c} /> },
+  { id: 'settings', labelKey: 'nav_settings', renderIcon: (c) => <IconSettings size={18} color={c} /> },
 ];
 
 interface AppLayoutProps {
@@ -67,7 +78,7 @@ export function AppLayout({
       {/* Global base styles */}
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; }
+        body { margin: 0; font-family: ${font.family}; }
         button, input, select, textarea { font-family: inherit; }
         button { cursor: pointer; }
         .resilio-sidebar {
@@ -102,19 +113,22 @@ export function AppLayout({
             display: 'none',
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.4)',
+            background: 'rgba(15, 23, 42, 0.3)',
+            backdropFilter: 'blur(2px)',
             zIndex: 99,
           }}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Light Theme Sidebar */}
       <aside
         className="resilio-sidebar"
         style={{
           width: layout.sidebarWidth,
           minWidth: layout.sidebarWidth,
           background: colors.sidebar,
+          backdropFilter: 'blur(12px)',
+          borderRight: `1px solid ${colors.sidebarBorder}`,
           display: 'flex',
           flexDirection: 'column',
           padding: `${space.lg}px ${space.md}px`,
@@ -136,7 +150,7 @@ export function AppLayout({
             gap: space.sm,
             marginBottom: space.md,
             paddingBottom: space.md,
-            borderBottom: `1px solid rgba(255,255,255,0.1)`,
+            borderBottom: `1px solid ${colors.borderLight}`,
           }}
         >
           <div
@@ -161,7 +175,7 @@ export function AppLayout({
               style={{
                 fontSize: font.sizeLg,
                 fontWeight: font.weightBold,
-                color: '#ffffff',
+                color: colors.text,
                 lineHeight: 1.2,
               }}
             >
@@ -170,7 +184,7 @@ export function AppLayout({
             <div
               style={{
                 fontSize: 10,
-                color: colors.sidebarMuted,
+                color: colors.textMuted,
                 lineHeight: 1.3,
               }}
             >
@@ -183,30 +197,34 @@ export function AppLayout({
         <nav aria-label="Primary navigation" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {NAV_ITEMS.map((item) => {
             const isActive = page === item.id;
+            const iconColor = isActive ? colors.sidebarActiveText : colors.sidebarText;
             return (
               <button
                 key={item.id}
                 type="button"
-                onClick={() => { onNavigate(item.id); onToggleSidebar(); }}
+                onClick={() => {
+                  onNavigate(item.id);
+                  if (sidebarOpen) onToggleSidebar();
+                }}
                 aria-current={isActive ? 'page' : undefined}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: space.md,
+                  gap: 12,
                   padding: `10px ${space.md}px`,
                   borderRadius: radius.md,
                   border: 'none',
                   background: isActive ? colors.sidebarActiveBg : 'transparent',
                   color: isActive ? colors.sidebarActiveText : colors.sidebarText,
                   fontSize: font.sizeMd,
-                  fontWeight: isActive ? font.weightSemibold : font.weightNormal,
+                  fontWeight: isActive ? font.weightSemibold : font.weightMedium,
                   textAlign: 'left',
                   width: '100%',
                   transition: 'background 0.15s, color 0.15s',
                   minHeight: 40,
                 }}
               >
-                <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{item.icon}</span>
+                {item.renderIcon(iconColor)}
                 <span>{t(item.labelKey)}</span>
               </button>
             );
@@ -218,7 +236,7 @@ export function AppLayout({
           style={{
             marginTop: 'auto',
             paddingTop: space.md,
-            borderTop: `1px solid rgba(255,255,255,0.1)`,
+            borderTop: `1px solid ${colors.borderLight}`,
             display: 'flex',
             gap: space.sm,
           }}
@@ -230,12 +248,12 @@ export function AppLayout({
               flex: 1,
               padding: '6px 0',
               borderRadius: radius.sm,
-              border: 'none',
-              background: lang === 'en' ? colors.teal : 'rgba(255,255,255,0.1)',
-              color: '#fff',
+              border: lang === 'en' ? 'none' : `1px solid ${colors.borderLight}`,
+              background: lang === 'en' ? colors.sidebarActiveBg : '#f8fafc',
+              color: lang === 'en' ? '#ffffff' : colors.sidebarText,
               fontSize: font.sizeSm,
-              fontWeight: font.weightMedium,
-              minHeight: 32,
+              fontWeight: font.weightSemibold,
+              minHeight: 34,
             }}
           >
             EN
@@ -247,12 +265,12 @@ export function AppLayout({
               flex: 1,
               padding: '6px 0',
               borderRadius: radius.sm,
-              border: 'none',
-              background: lang === 'id' ? colors.teal : 'rgba(255,255,255,0.1)',
-              color: '#fff',
+              border: lang === 'id' ? 'none' : `1px solid ${colors.borderLight}`,
+              background: lang === 'id' ? colors.sidebarActiveBg : '#f8fafc',
+              color: lang === 'id' ? '#ffffff' : colors.sidebarText,
               fontSize: font.sizeSm,
-              fontWeight: font.weightMedium,
-              minHeight: 32,
+              fontWeight: font.weightSemibold,
+              minHeight: 34,
             }}
           >
             ID
@@ -271,19 +289,18 @@ export function AppLayout({
           transition: 'margin-left 0.25s ease',
         }}
       >
-
         {/* Header */}
         <header
           style={{
             height: layout.headerHeight,
-            background: colors.headerBg,
+            background: 'rgba(255, 255, 255, 0.85)',
+            backdropFilter: 'blur(10px)',
             borderBottom: `1px solid ${colors.headerBorder}`,
             display: 'flex',
             alignItems: 'center',
             padding: `0 ${layout.contentPadding}px`,
             gap: space.md,
             flexShrink: 0,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
           }}
         >
           {/* Hamburger */}
@@ -295,7 +312,6 @@ export function AppLayout({
             style={{
               background: 'none',
               border: 'none',
-              fontSize: 22,
               color: colors.textMuted,
               padding: '4px 6px',
               borderRadius: radius.sm,
@@ -304,7 +320,7 @@ export function AppLayout({
               minHeight: 40,
             }}
           >
-            ☰
+            <IconMenu size={22} color={colors.text} />
           </button>
 
           {/* Page title */}
@@ -342,11 +358,11 @@ export function AppLayout({
           {/* Node ID chip */}
           <div
             style={{
-              padding: '4px 10px',
+              padding: '5px 12px',
               background: colors.tealLight,
               color: colors.tealDark,
               borderRadius: radius.pill,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: font.weightSemibold,
               maxWidth: 160,
               overflow: 'hidden',
@@ -354,11 +370,11 @@ export function AppLayout({
               whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
-              gap: 4,
+              gap: 6,
             }}
             title="Your Node ID"
           >
-            <span>🔑</span>
+            <IconKey size={14} color={colors.tealDark} />
             <span>{nodeId ?? '...'}</span>
           </div>
         </header>

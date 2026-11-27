@@ -1,8 +1,23 @@
 import { itemSummary, orsElements } from '@resiliolog/crdt-core';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
 import { listCursors, type CursorRow } from '../storage/db';
-import { useEffect, useState } from 'react';
+import type { Page } from './AppLayout';
+import {
+  IconAlertTriangle,
+  IconArrowDownLeft,
+  IconArrowLeftRight,
+  IconArrowUpRight,
+  IconBarChart,
+  IconBell,
+  IconDroplet,
+  IconHeartPulse,
+  IconHome,
+  IconPackage,
+  IconQrCode,
+  IconShield,
+} from './Icons';
 import {
   badge,
   card,
@@ -12,20 +27,25 @@ import {
   radius,
   space,
 } from './styles';
-import type { Page } from './AppLayout';
 
 interface DashboardViewProps {
   onNavigate: (page: Page) => void;
 }
 
-const CAT_ICONS: Record<string, string> = {
-  food: '🌾',
-  water: '💧',
-  medicine: '💊',
-  shelter: '🏠',
-  hygiene: '🧴',
-  other: '📦',
-};
+function CategoryIcon({ category }: { category: string }) {
+  switch (category) {
+    case 'water':
+      return <IconDroplet size={18} color="#0284c7" />;
+    case 'medicine':
+      return <IconHeartPulse size={18} color="#dc2626" />;
+    case 'shelter':
+      return <IconHome size={18} color="#7c3aed" />;
+    case 'hygiene':
+      return <IconShield size={18} color="#059669" />;
+    default:
+      return <IconPackage size={18} color={colors.teal} />;
+  }
+}
 
 export function DashboardView({ onNavigate }: DashboardViewProps) {
   const { replica, loading } = useReplica();
@@ -54,18 +74,42 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
   const maxSyncedClock = cursors.reduce((max, c) => (c.until > max ? c.until : max), 0);
   const hasUnsyncedChanges = replica.clock > maxSyncedClock;
 
-  // Compute total stock across all items
   let totalStock = 0;
   for (const [id] of itemEntries) {
     const s = itemSummary(replica.state, id);
     totalStock += s?.value ?? 0;
   }
 
-  const quickActions: Array<{ labelKey: string; subKey: string; page: Page; emoji: string }> = [
-    { labelKey: 'dashboard_receiveGoods', subKey: 'dashboard_receiveGoodsSub', page: 'field', emoji: '📥' },
-    { labelKey: 'dashboard_issueGoods', subKey: 'dashboard_issueGoodsSub', page: 'field', emoji: '📤' },
-    { labelKey: 'dashboard_transferRights', subKey: 'dashboard_transferRightsSub', page: 'command-center', emoji: '🔀' },
-    { labelKey: 'dashboard_qrSync', subKey: 'dashboard_qrSyncSub', page: 'sync', emoji: '📲' },
+  const quickActions: Array<{
+    labelKey: string;
+    subKey: string;
+    page: Page;
+    renderIcon: (color: string) => ReactNode;
+  }> = [
+    {
+      labelKey: 'dashboard_receiveGoods',
+      subKey: 'dashboard_receiveGoodsSub',
+      page: 'field',
+      renderIcon: (c) => <IconArrowDownLeft size={22} color={c} />,
+    },
+    {
+      labelKey: 'dashboard_issueGoods',
+      subKey: 'dashboard_issueGoodsSub',
+      page: 'field',
+      renderIcon: (c) => <IconArrowUpRight size={22} color={c} />,
+    },
+    {
+      labelKey: 'dashboard_transferRights',
+      subKey: 'dashboard_transferRightsSub',
+      page: 'command-center',
+      renderIcon: (c) => <IconArrowLeftRight size={22} color={c} />,
+    },
+    {
+      labelKey: 'dashboard_qrSync',
+      subKey: 'dashboard_qrSyncSub',
+      page: 'sync',
+      renderIcon: (c) => <IconQrCode size={22} color={c} />,
+    },
   ];
 
   return (
@@ -106,15 +150,15 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                   position: 'relative',
                   overflow: 'hidden',
                   boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
-                  minHeight: 90,
+                  minHeight: 96,
                 }}
               >
-                <span style={{ fontSize: 24 }}>{qa.emoji}</span>
+                <div style={{ marginBottom: 4 }}>{qa.renderIcon(c.accent)}</div>
                 <span style={{ fontSize: font.sizeMd, fontWeight: font.weightSemibold, color: c.accent }}>
                   {t(qa.labelKey)}
                 </span>
                 <span style={{ fontSize: font.sizeSm, color: colors.textMuted }}>{t(qa.subKey)}</span>
-                <span style={{ position: 'absolute', top: 10, right: 12, color: c.accent, fontSize: 18 }}>↗</span>
+                <span style={{ position: 'absolute', top: 10, right: 12, color: c.accent, fontSize: 16, fontWeight: 600 }}>↗</span>
               </button>
             );
           })}
@@ -123,10 +167,28 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
       {/* KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: space.md }}>
-        <KpiCard label={t('dashboard_totalItems')} value={itemEntries.length} emoji="📦" />
-        <KpiCard label={t('dashboard_totalStock')} value={totalStock} emoji="📊" />
-        <KpiCard label={t('dashboard_openTopUps')} value={openTopUps.length} emoji="🔔" warn={openTopUps.length > 0} />
-        <KpiCard label={t('dashboard_emergencyOverrides')} value={overrideEntries.length} emoji="⚠️" danger={overrideEntries.length > 0} />
+        <KpiCard
+          label={t('dashboard_totalItems')}
+          value={itemEntries.length}
+          icon={<IconPackage size={22} color={colors.teal} />}
+        />
+        <KpiCard
+          label={t('dashboard_totalStock')}
+          value={totalStock}
+          icon={<IconBarChart size={22} color="#2563eb" />}
+        />
+        <KpiCard
+          label={t('dashboard_openTopUps')}
+          value={openTopUps.length}
+          icon={<IconBell size={22} color={openTopUps.length > 0 ? colors.warning : '#64748b'} />}
+          warn={openTopUps.length > 0}
+        />
+        <KpiCard
+          label={t('dashboard_emergencyOverrides')}
+          value={overrideEntries.length}
+          icon={<IconAlertTriangle size={22} color={overrideEntries.length > 0 ? colors.danger : '#64748b'} />}
+          danger={overrideEntries.length > 0}
+        />
       </div>
 
       {/* Bottom row: Inventory insights + Sync status + Node info */}
@@ -160,7 +222,7 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: space.sm }}>
-                      <span>{CAT_ICONS[item.meta.category] ?? '📦'}</span>
+                      <CategoryIcon category={item.meta.category} />
                       <div>
                         <div style={{ fontSize: font.sizeMd, fontWeight: font.weightMedium }}>{item.meta.name}</div>
                         <div style={{ fontSize: font.sizeSm, color: colors.textMuted }}>{item.meta.unit} · {item.meta.category}</div>
@@ -228,13 +290,13 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 function KpiCard({
   label,
   value,
-  emoji,
+  icon,
   warn,
   danger,
 }: {
   label: string;
   value: number;
-  emoji: string;
+  icon: ReactNode;
   warn?: boolean;
   danger?: boolean;
 }) {
@@ -248,10 +310,10 @@ function KpiCard({
         background: bg,
         display: 'flex',
         flexDirection: 'column',
-        gap: space.xs,
+        gap: space.sm,
       }}
     >
-      <div style={{ fontSize: 24 }}>{emoji}</div>
+      <div>{icon}</div>
       <div style={{ fontSize: font.size3xl, fontWeight: font.weightBold, color: textColor, lineHeight: 1 }}>
         {value}
       </div>
@@ -260,7 +322,7 @@ function KpiCard({
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: font.sizeMd }}>
       <span style={{ color: colors.textMuted }}>{label}</span>

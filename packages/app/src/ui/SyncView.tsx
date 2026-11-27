@@ -15,6 +15,7 @@ import {
   WebRtcSyncPeer,
 } from '../transport/webrtc';
 import { getSyncErrorMessage } from './error-messages';
+import { IconCamera } from './Icons';
 import { alert, btn, card, colors, font, input as inputStyle, radius, space } from './styles';
 
 export function SyncView() {
@@ -242,7 +243,10 @@ export function SyncView() {
       {/* Scan QR */}
       <div style={{ ...card, display: 'grid', gap: space.md }}>
         <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>{t('sync_scanTitle')}</h2>
-        <div style={{ fontSize: font.sizeSm, color: colors.textMuted }}>{t('sync_cameraNote')}</div>
+        <div style={{ fontSize: font.sizeSm, color: colors.textMuted, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <IconCamera size={15} color={colors.textMuted} />
+          <span>{t('sync_cameraNote')}</span>
+        </div>
         <div style={{ display: 'flex', gap: space.sm }}>
           {!scanning ? (
             <button type="button" onClick={() => void handleStartScan()} style={btn.primary}>
