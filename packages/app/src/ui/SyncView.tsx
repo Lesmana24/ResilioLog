@@ -9,6 +9,10 @@ import {
   type PreparedQrExport,
 } from '../transport/qr-export';
 import { QrScanSession } from '../transport/qr-scan';
+import {
+  decodeSignalFromBlob,
+  WebRtcSyncPeer,
+} from '../transport/webrtc';
 import { getSyncErrorMessage } from './error-messages';
 
 export function SyncView() {
@@ -28,6 +32,44 @@ export function SyncView() {
   const [progress, setProgress] = useState<ChunkProgress | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
+
+  // WebRTC (P1) optional state
+  const rtcPeerRef = useRef<WebRtcSyncPeer | null>(null);
+  const [rtcChunks, setRtcChunks] = useState<readonly string[] | null>(null);
+  const [rtcFrameIdx, setRtcFrameIdx] = useState(0);
+  const [rtcQrUrl, setRtcQrUrl] = useState<string | null>(null);
+  const [rtcSignalInput, setRtcSignalInput] = useState('');
+  const [rtcOpen, setRtcOpen] = useState(false);
+  const [rtcStatus, setRtcStatus] = useState<string | null>(null);
+  const [rtcError, setRtcError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!rtcChunks || rtcChunks.length === 0) {
+      setRtcQrUrl(null);
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setRtcFrameIdx((p) => (p + 1) % rtcChunks.length);
+    }, DEFAULT_QR_CYCLE_MS);
+    return () => window.clearInterval(timer);
+  }, [rtcChunks]);
+
+  useEffect(() => {
+    if (!rtcChunks || rtcChunks.length === 0) return;
+    let active = true;
+    void renderQrDataUrl(rtcChunks[rtcFrameIdx % rtcChunks.length]!).then((url) => {
+      if (active) setRtcQrUrl(url);
+    });
+    return () => {
+      active = false;
+    };
+  }, [rtcChunks, rtcFrameIdx]);
+
+  useEffect(() => {
+    return () => {
+      rtcPeerRef.current?.close();
+    };
+  }, []);
 
   useEffect(() => {
     if (!exported || exported.chunks.length === 0 || paused) return;
@@ -228,6 +270,142 @@ export function SyncView() {
         )}
         {scanSuccess && (
           <div style={{ color: '#166534', fontSize: 13, fontWeight: 600 }}>{scanSuccess}</div>
+        )}
+      </div>
+
+      <div style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 10 }}>
+        <h3 style={{ margin: 0, fontSize: 16 }}>WebRTC Local Sync (P1 Optional)</h3>
+        <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>
+          Works on same LAN/hotspot without internet. If blocked by hotspot isolation, use QR Sync above.
+        </p>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setRtcError(null);
+              setRtcStatus('Gathering ICE candidates...');
+              try {
+                rtcPeerRef.current?.close();
+                const peer = new WebRtcSyncPeer({
+                  onChannelOpen: () => {
+                    setRtcOpen(true);
+                    setRtcStatus('DataChannel "sync" open.');
+                  },
+                  onEnvelope: async (env) => {
+                    const encoded = JSON.stringify(env);
+                    setRtcStatus(`Received SyncEnvelope (${encoded.length} bytes) from ${env.from}.`);
+                  },
+                  onError: (msg) => {
+                    setRtcError(msg);
+                    setRtcOpen(false);
+                  },
+                });
+                rtcPeerRef.current = peer;
+                void peer
+                  .createOfferSignal(replica.nodeId)
+                  .then((sig) => {
+                    setRtcChunks(sig.chunks);
+                    setRtcFrameIdx(0);
+                    setRtcStatus(`Offer ready (${sig.chunks.length} QR chunks).`);
+                  })
+                  .catch((err) => {
+                    setRtcError(err instanceof Error ? err.message : 'WebRTC offer failed. Use QR sync above.');
+                  });
+              } catch (err) {
+                setRtcError(err instanceof Error ? err.message : 'WebRTC unavailable. Use QR sync above.');
+              }
+            }}
+          >
+            Create WebRTC Offer
+          </button>
+
+          {rtcOpen && (
+            <button
+              type="button"
+              onClick={() => {
+                try {
+                  rtcPeerRef.current?.sendReplica(replica, 0);
+                  setRtcStatus('Sent SyncEnvelope over DataChannel.');
+                } catch (err) {
+                  setRtcError(err instanceof Error ? err.message : 'Send failed. Use QR sync above.');
+                }
+              }}
+            >
+              Send State via WebRTC
+            </button>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={rtcSignalInput}
+            onChange={(e) => setRtcSignalInput(e.target.value)}
+            placeholder="Paste SignalEnvelope blob"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setRtcError(null);
+              try {
+                const sig = decodeSignalFromBlob(rtcSignalInput.trim());
+                if (sig.kind === 'offer') {
+                  rtcPeerRef.current?.close();
+                  const peer = new WebRtcSyncPeer({
+                    onChannelOpen: () => {
+                      setRtcOpen(true);
+                      setRtcStatus('DataChannel "sync" open.');
+                    },
+                    onEnvelope: (env) => {
+                      setRtcStatus(`Received SyncEnvelope from ${env.from}.`);
+                    },
+                    onError: (msg) => {
+                      setRtcError(msg);
+                      setRtcOpen(false);
+                    },
+                  });
+                  rtcPeerRef.current = peer;
+                  void peer
+                    .acceptOfferAndCreateAnswer(replica.nodeId, sig.sdp)
+                    .then((ans) => {
+                      setRtcChunks(ans.chunks);
+                      setRtcFrameIdx(0);
+                      setRtcStatus(`Answer ready (${ans.chunks.length} QR chunks).`);
+                    })
+                    .catch((err) => {
+                      setRtcError(err instanceof Error ? err.message : 'Failed to accept offer. Use QR sync above.');
+                    });
+                } else if (rtcPeerRef.current) {
+                  void rtcPeerRef.current
+                    .acceptAnswer(sig.sdp)
+                    .then(() => setRtcStatus('Answer accepted; connecting...'))
+                    .catch((err) => {
+                      setRtcError(err instanceof Error ? err.message : 'Failed to accept answer. Use QR sync above.');
+                    });
+                }
+              } catch {
+                setRtcError('Invalid SignalEnvelope. Use QR Sync above as fallback.');
+              }
+            }}
+          >
+            Apply Signal Blob
+          </button>
+        </div>
+
+        {rtcQrUrl && rtcChunks && (
+          <div>
+            <div style={{ fontSize: 12 }}>
+              Signal QR {(rtcFrameIdx % rtcChunks.length) + 1} of {rtcChunks.length}
+            </div>
+            <img src={rtcQrUrl} alt="WebRTC Signal QR" width={220} height={220} />
+          </div>
+        )}
+        {rtcStatus && <div style={{ fontSize: 13 }}>{rtcStatus}</div>}
+        {rtcError && (
+          <div role="alert" style={{ color: '#991b1b', fontSize: 13 }}>
+            {rtcError} — <strong>Fallback:</strong> Use QR Sync above.
+          </div>
         )}
       </div>
     </section>
