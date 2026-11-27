@@ -31,7 +31,7 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 - Exit criteria: `pnpm test` green; three laws pass ≥ 1000 runs on all implemented types.
 
 ## Day 2 — Fri 27 Nov: Bounded Counter + Sync (Role B) → FREEZE 18:00
-- [ ] **B-08** Bounded Counter (R matrix, U, O) + invariant tests (rights ≥ 0, value ≥ 0 without override)
+- [x] **B-08** Bounded Counter (R matrix, U, O) + invariant tests (rights ≥ 0, value ≥ 0 without override) *(done: implemented all `bc*` functions in `bounded-counter.ts` + 5 tests B1–B4 & L1–L5 at 1000 runs)*
 - [ ] **B-09** Item operations: `createItem`, `receive`, `issue`, `transferRights`, `emergencyIssue` (ledger + quota + log updated atomically)
 - [ ] **B-10** Top-up trigger: after `issue`, if remainingRatio ≤ 0.15 → enqueue request (deduped)
 - [ ] **B-11** `packages/sync`: `makeDelta`, `applyDelta`, envelope, crc32, deflate+base64url, QR chunk/reassemble
