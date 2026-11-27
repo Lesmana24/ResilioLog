@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ReplicaProvider, useReplica } from './state/useReplica';
 import { CommandCenterView } from './ui/CommandCenterView';
 import { DevReplicaPanel } from './ui/DevReplicaPanel';
+import { ErrorBoundary } from './ui/ErrorBoundary';
 import { FieldView } from './ui/FieldView';
 import { SyncView } from './ui/SyncView';
 
@@ -34,7 +35,20 @@ function AppShell() {
   }
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: 720, margin: '0 auto', padding: 16 }}>
+    <div
+      style={{
+        fontFamily: 'system-ui, sans-serif',
+        maxWidth: 720,
+        margin: '0 auto',
+        padding: 12,
+        boxSizing: 'border-box',
+      }}
+    >
+      <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        button, input, select, textarea { min-height: 40px; font-size: 16px; }
+        table { display: block; overflow-x: auto; }
+      `}</style>
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <h1 style={{ margin: 0, fontSize: 20 }}>ResilioLog</h1>
         <nav aria-label="Primary navigation" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -96,8 +110,10 @@ function AppShell() {
 
 export function App() {
   return (
-    <ReplicaProvider>
-      <AppShell />
-    </ReplicaProvider>
+    <ErrorBoundary>
+      <ReplicaProvider>
+        <AppShell />
+      </ReplicaProvider>
+    </ErrorBoundary>
   );
 }

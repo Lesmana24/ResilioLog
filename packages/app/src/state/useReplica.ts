@@ -22,6 +22,7 @@ import {
   type ReactNode,
 } from 'react';
 import {
+  clearLocalData,
   loadReplica,
   requestPersistence,
   saveReplica,
@@ -38,6 +39,7 @@ export interface ReplicaContextValue {
   readonly importEnvelope: (
     blob: string,
   ) => Promise<Result<Replica, SyncErrorCode | 'NOT_READY'>>;
+  readonly resetLocalData: () => Promise<Replica>;
 }
 
 const ReplicaContext = createContext<ReplicaContextValue | null>(null);
@@ -116,6 +118,14 @@ export function ReplicaProvider({ children }: { readonly children: ReactNode }) 
     [],
   );
 
+  const resetLocalData = useCallback(async (): Promise<Replica> => {
+    await clearLocalData();
+    const fresh = await loadReplica();
+    replicaRef.current = fresh;
+    setReplica(fresh);
+    return fresh;
+  }, []);
+
   return createElement(
     ReplicaContext.Provider,
     {
@@ -125,6 +135,7 @@ export function ReplicaProvider({ children }: { readonly children: ReactNode }) 
         storagePersistent,
         run,
         importEnvelope,
+        resetLocalData,
       },
     },
     children,
