@@ -1,10 +1,12 @@
 import { useState } from 'react';
+import { ReplicaProvider } from './state/useReplica';
 import { CommandCenterView } from './ui/CommandCenterView';
+import { DevReplicaPanel } from './ui/DevReplicaPanel';
 import { FieldView } from './ui/FieldView';
 
 type Page = 'field' | 'command-center';
 
-export function App() {
+function AppShell() {
   const [page, setPage] = useState<Page>('field');
 
   return (
@@ -30,6 +32,15 @@ export function App() {
       </header>
 
       <main>{page === 'field' ? <FieldView /> : <CommandCenterView />}</main>
+      <DevReplicaPanel />
     </div>
+  );
+}
+
+export function App() {
+  return (
+    <ReplicaProvider>
+      <AppShell />
+    </ReplicaProvider>
   );
 }
