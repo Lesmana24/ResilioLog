@@ -1,31 +1,18 @@
-import basicSsl from '@vitejs/plugin-basic-ssl';
-import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
-import { pwaManifest } from './src/pwa/manifest.ts';
+import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  plugins: [
-    react(),
-    basicSsl(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
-      includeAssets: ['icons/*.svg'],
-      manifest: pwaManifest,
-      workbox: {
-        cleanupOutdatedCaches: true,
-        navigateFallback: '/index.html',
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
-      },
-    }),
-  ],
-  server: {
-    host: true,
-    port: 5173,
-  },
-  preview: {
-    host: true,
-    port: 4173,
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+      '@resiliolog/crdt-core': path.resolve(__dirname, '../crdt-core/src/index.ts'),
+      '@resiliolog/sync': path.resolve(__dirname, '../sync/src/index.ts'),
+    },
   },
 });

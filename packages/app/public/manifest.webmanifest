@@ -1,0 +1,18 @@
+{
+  "name": "ResilioLog — Offline-First Disaster Logistics",
+  "short_name": "ResilioLog",
+  "description": "Offline-first disaster relief inventory and P2P CvRDT mesh synchronization.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0F172A",
+  "background_color": "#F8FAFC",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
