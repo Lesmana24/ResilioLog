@@ -1,18 +1,21 @@
 import { createItem, itemSummary, type ItemSummary } from '@resiliolog/crdt-core';
 import { useState } from 'react';
+import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
+import { alert, btn, card, colors, font, radius, space } from './styles';
 
 const DEV_TOOLS_ENABLED = import.meta.env.DEV;
 
 export function DevReplicaPanel() {
   const { replica, loading, storagePersistent, run, resetLocalData } = useReplica();
+  const { t } = useLang();
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
   if (loading || !replica) {
     return (
-      <aside style={{ marginTop: 24, padding: 12, border: '1px solid #d1d5db', borderRadius: 6 }}>
-        <strong>Dev Panel</strong>: Loading replica...
+      <aside style={{ ...card, marginTop: space.lg }}>
+        <strong>Dev Panel</strong>: {t('loadingReplica')}
       </aside>
     );
   }
@@ -60,26 +63,26 @@ export function DevReplicaPanel() {
   }
 
   return (
-    <aside style={{ marginTop: 24, padding: 12, border: '1px solid #d1d5db', borderRadius: 6 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <h3 style={{ margin: 0, fontSize: 14 }}>Dev Replica Panel</h3>
+    <aside style={{ ...card, marginTop: space.xl }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: space.sm, marginBottom: space.sm }}>
+        <h3 style={{ margin: 0, fontSize: font.sizeMd }}>Dev Replica Panel</h3>
         {DEV_TOOLS_ENABLED && (
           <span
             style={{
-              padding: '2px 6px',
-              fontSize: 11,
-              fontWeight: 700,
+              padding: '2px 8px',
+              fontSize: font.sizeXs,
+              fontWeight: font.weightBold,
               backgroundColor: '#e0f2fe',
               color: '#0369a1',
-              borderRadius: 4,
+              borderRadius: radius.pill,
             }}
           >
-            DEV-ONLY
+            {t('settings_devOnly')}
           </span>
         )}
       </div>
 
-      <div style={{ fontSize: 13, marginBottom: 8 }}>
+      <div style={{ fontSize: font.sizeSm, marginBottom: space.md, color: colors.textMuted, display: 'grid', gap: 4 }}>
         <div>
           <strong>nodeId:</strong> <code>{replica.nodeId}</code>
         </div>
@@ -92,17 +95,12 @@ export function DevReplicaPanel() {
       </div>
 
       {DEV_TOOLS_ENABLED && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
-          <button type="button" disabled={busy} onClick={() => void handleLoadSampleData()}>
-            Sample data
+        <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap', marginBottom: space.md }}>
+          <button type="button" disabled={busy} onClick={() => void handleLoadSampleData()} style={btn.secondary}>
+            {t('settings_sampleData')}
           </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => setConfirmResetOpen(true)}
-            style={{ backgroundColor: '#fee2e2', color: '#991b1b', border: '1px solid #dc2626' }}
-          >
-            Reset local data
+          <button type="button" disabled={busy} onClick={() => setConfirmResetOpen(true)} style={btn.danger}>
+            {t('settings_resetData')}
           </button>
         </div>
       )}
@@ -112,30 +110,20 @@ export function DevReplicaPanel() {
           role="dialog"
           aria-modal="true"
           aria-label="Confirm reset local data"
-          style={{
-            marginBottom: 10,
-            padding: 10,
-            border: '2px solid #dc2626',
-            borderRadius: 6,
-            backgroundColor: '#fef2f2',
-            fontSize: 13,
-          }}
+          style={{ ...alert.danger, marginBottom: space.md }}
         >
-          <p style={{ marginTop: 0 }}>
-            Delete all local IndexedDB data (items, logs, cursors) and generate a new{' '}
-            <code>nodeId</code>?
-          </p>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <p style={{ marginTop: 0 }}>{t('settings_resetConfirm')}</p>
+          <div style={{ display: 'flex', gap: space.sm }}>
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleConfirmReset()}
-              style={{ backgroundColor: '#dc2626', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: 4 }}
+              style={{ ...btn.primary, backgroundColor: colors.danger }}
             >
-              Confirm Reset
+              {t('settings_confirmReset')}
             </button>
-            <button type="button" disabled={busy} onClick={() => setConfirmResetOpen(false)}>
-              Cancel
+            <button type="button" disabled={busy} onClick={() => setConfirmResetOpen(false)} style={btn.secondary}>
+              {t('settings_cancel')}
             </button>
           </div>
         </div>
@@ -144,9 +132,9 @@ export function DevReplicaPanel() {
       <pre
         style={{
           margin: 0,
-          padding: 8,
-          background: '#f3f4f6',
-          borderRadius: 4,
+          padding: space.md,
+          background: colors.borderLight,
+          borderRadius: radius.md,
           fontSize: 12,
           overflowX: 'auto',
         }}

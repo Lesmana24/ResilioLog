@@ -1,5 +1,6 @@
 import type { ChunkProgress } from '@resiliolog/sync';
 import { useEffect, useRef, useState } from 'react';
+import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
 import { getCursor } from '../storage/db';
 import {
@@ -14,9 +15,11 @@ import {
   WebRtcSyncPeer,
 } from '../transport/webrtc';
 import { getSyncErrorMessage } from './error-messages';
+import { alert, btn, card, colors, font, input as inputStyle, radius, space } from './styles';
 
 export function SyncView() {
   const { replica, loading, importEnvelope } = useReplica();
+  const { t, lang } = useLang();
 
   // Export state
   const [peerNodeId, setPeerNodeId] = useState('');
@@ -102,10 +105,7 @@ export function SyncView() {
 
   if (loading || !replica) {
     return (
-      <section>
-        <h2>QR Sync</h2>
-        <p>Loading local replica...</p>
-      </section>
+      <div style={{ color: colors.textMuted, padding: space.lg }}>{t('loadingReplica')}</div>
     );
   }
 
@@ -135,17 +135,17 @@ export function SyncView() {
         setProgress(p);
       },
       onError: (code) => {
-        setScanError(getSyncErrorMessage(code));
+        setScanError(getSyncErrorMessage(code, lang));
       },
       onComplete: async (blob) => {
         const res = await importEnvelope(blob);
         if (!res.ok) {
-          setScanError(getSyncErrorMessage(res.error));
+          setScanError(getSyncErrorMessage(res.error, lang));
           return;
         }
         session.stopCamera();
         setScanning(false);
-        setScanSuccess(`Synced successfully (clock ${res.value.clock}).`);
+        setScanSuccess(`${t('sync_syncedSuccess')} (${t('clock')} ${res.value.clock}).`);
       },
     });
 
@@ -154,7 +154,7 @@ export function SyncView() {
       await session.startCamera(videoRef.current);
       setScanning(true);
     } catch {
-      setScanError('Camera access failed. Ensure HTTPS is enabled and camera permission is granted.');
+      setScanError(t('sync_cameraError'));
       setScanning(false);
     }
   }
@@ -165,38 +165,42 @@ export function SyncView() {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 20 }}>
-      <h2>QR Sync (Offline)</h2>
+    <div style={{ display: 'grid', gap: space.xl }}>
+      <div>
+        <h1 style={{ margin: 0, fontSize: font.sizeXl, fontWeight: font.weightBold }}>{t('sync_title')}</h1>
+      </div>
 
-      <div style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 10 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Export Delta as QR</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Export QR */}
+      <div style={{ ...card, display: 'grid', gap: space.md }}>
+        <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>{t('sync_exportTitle')}</h2>
+        <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="text"
             value={peerNodeId}
             onChange={(e) => setPeerNodeId(e.target.value)}
-            placeholder="Peer nodeId (leave blank for full)"
+            placeholder={t('sync_peerNodeId')}
+            style={{ ...inputStyle, flex: 1, minWidth: 220 }}
           />
-          <button type="button" onClick={() => void handleGenerateExport()}>
-            Generate QR Frames
+          <button type="button" onClick={() => void handleGenerateExport()} style={btn.primary}>
+            {t('sync_prepare')}
           </button>
         </div>
 
         {exported && (
-          <div style={{ display: 'grid', gap: 8 }}>
-            <div style={{ fontSize: 13 }}>
-              Type: <strong>{exported.type}</strong> · msgId: <code>{exported.msgId}</code> · Frame{' '}
-              {(frameIdx % exported.chunks.length) + 1} of {exported.chunks.length}
+          <div style={{ display: 'grid', gap: space.md }}>
+            <div style={{ fontSize: font.sizeMd, color: colors.textMuted }}>
+              <strong>{exported.type}</strong> · msgId: <code>{exported.msgId}</code> · {t('sync_frame')}{' '}
+              {(frameIdx % exported.chunks.length) + 1} {t('sync_of')} {exported.chunks.length}
             </div>
 
             {exported.warningMessage && (
-              <div role="alert" style={{ padding: 8, backgroundColor: '#fef3c7', color: '#92400e', borderRadius: 4, fontSize: 13 }}>
-                {exported.warningMessage}
+              <div role="alert" style={alert.warning}>
+                {exported.chunks.length > 20 ? t('sync_chunkWarning') : exported.warningMessage}
               </div>
             )}
 
             {qrDataUrl && (
-              <div>
+              <div style={{ display: 'flex', justifyContent: 'center', padding: space.md, background: '#fff', borderRadius: radius.md, border: `1px solid ${colors.borderLight}` }}>
                 <img
                   src={qrDataUrl}
                   alt={`QR frame ${(frameIdx % exported.chunks.length) + 1} of ${exported.chunks.length}`}
@@ -206,9 +210,9 @@ export function SyncView() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" onClick={() => setPaused((p) => !p)}>
-                {paused ? 'Resume' : 'Pause'}
+            <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => setPaused((p) => !p)} style={btn.secondary}>
+                {paused ? t('sync_resume') : t('sync_pause')}
               </button>
               <button
                 type="button"
@@ -216,8 +220,9 @@ export function SyncView() {
                   setPaused(true);
                   setFrameIdx((prev) => (prev - 1 + exported.chunks.length) % exported.chunks.length);
                 }}
+                style={btn.secondary}
               >
-                Prev Step
+                {t('sync_prev')}
               </button>
               <button
                 type="button"
@@ -225,24 +230,27 @@ export function SyncView() {
                   setPaused(true);
                   setFrameIdx((prev) => (prev + 1) % exported.chunks.length);
                 }}
+                style={btn.secondary}
               >
-                Next Step
+                {t('sync_next')}
               </button>
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 10 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>Scan QR Chunks</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
+      {/* Scan QR */}
+      <div style={{ ...card, display: 'grid', gap: space.md }}>
+        <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>{t('sync_scanTitle')}</h2>
+        <div style={{ fontSize: font.sizeSm, color: colors.textMuted }}>{t('sync_cameraNote')}</div>
+        <div style={{ display: 'flex', gap: space.sm }}>
           {!scanning ? (
-            <button type="button" onClick={() => void handleStartScan()}>
-              Start Camera Scan
+            <button type="button" onClick={() => void handleStartScan()} style={btn.primary}>
+              {t('sync_scanStart')}
             </button>
           ) : (
-            <button type="button" onClick={handleStopScan}>
-              Stop Camera
+            <button type="button" onClick={handleStopScan} style={btn.danger}>
+              {t('sync_scanStop')}
             </button>
           )}
         </div>
@@ -251,50 +259,52 @@ export function SyncView() {
           ref={videoRef}
           style={{
             width: '100%',
-            maxWidth: 320,
-            borderRadius: 6,
+            maxWidth: 340,
+            borderRadius: radius.md,
             backgroundColor: '#111827',
             display: scanning ? 'block' : 'none',
           }}
         />
 
         {progress && (
-          <div style={{ fontSize: 13 }}>
-            {progress.received} of {progress.total} scanned (msgId: <code>{progress.msgId}</code>)
+          <div style={{ fontSize: font.sizeMd }}>
+            {progress.received} {t('sync_of')} {progress.total} {t('sync_scanProgress')} (msgId: <code>{progress.msgId}</code>)
           </div>
         )}
         {scanError && (
-          <div role="alert" style={{ color: '#991b1b', fontSize: 13 }}>
+          <div role="alert" style={alert.danger}>
             {scanError}
           </div>
         )}
         {scanSuccess && (
-          <div style={{ color: '#166534', fontSize: 13, fontWeight: 600 }}>{scanSuccess}</div>
+          <div style={alert.success}>{scanSuccess}</div>
         )}
       </div>
 
-      <div style={{ padding: 12, border: '1px solid #d1d5db', borderRadius: 6, display: 'grid', gap: 10 }}>
-        <h3 style={{ margin: 0, fontSize: 16 }}>WebRTC Local Sync (P1 Optional)</h3>
-        <p style={{ margin: 0, fontSize: 12, color: '#4b5563' }}>
-          Works on same LAN/hotspot without internet. If blocked by hotspot isolation, use QR Sync above.
+      {/* WebRTC P1 */}
+      <div style={{ ...card, display: 'grid', gap: space.md }}>
+        <h2 style={{ margin: 0, fontSize: font.sizeLg, fontWeight: font.weightSemibold }}>{t('sync_webrtcTitle')}</h2>
+        <p style={{ margin: 0, fontSize: font.sizeMd, color: colors.textMuted }}>
+          {t('sync_webrtcSub')}
         </p>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap' }}>
           <button
             type="button"
+            style={btn.secondary}
             onClick={() => {
               setRtcError(null);
-              setRtcStatus('Gathering ICE candidates...');
+              setRtcStatus(t('sync_webrtcGathering'));
               try {
                 rtcPeerRef.current?.close();
                 const peer = new WebRtcSyncPeer({
                   onChannelOpen: () => {
                     setRtcOpen(true);
-                    setRtcStatus('DataChannel "sync" open.');
+                    setRtcStatus(t('sync_webrtcChannelOpen'));
                   },
                   onEnvelope: async (env) => {
                     const encoded = JSON.stringify(env);
-                    setRtcStatus(`Received SyncEnvelope (${encoded.length} bytes) from ${env.from}.`);
+                    setRtcStatus(`SyncEnvelope (${encoded.length} bytes) — ${env.from}`);
                   },
                   onError: (msg) => {
                     setRtcError(msg);
@@ -307,45 +317,48 @@ export function SyncView() {
                   .then((sig) => {
                     setRtcChunks(sig.chunks);
                     setRtcFrameIdx(0);
-                    setRtcStatus(`Offer ready (${sig.chunks.length} QR chunks).`);
+                    setRtcStatus(`Offer (${sig.chunks.length} QR chunks).`);
                   })
                   .catch((err) => {
-                    setRtcError(err instanceof Error ? err.message : 'WebRTC offer failed. Use QR sync above.');
+                    setRtcError(err instanceof Error ? err.message : t('sync_webrtcError'));
                   });
               } catch (err) {
-                setRtcError(err instanceof Error ? err.message : 'WebRTC unavailable. Use QR sync above.');
+                setRtcError(err instanceof Error ? err.message : t('sync_webrtcError'));
               }
             }}
           >
-            Create WebRTC Offer
+            {t('sync_webrtcCreateOffer')}
           </button>
 
           {rtcOpen && (
             <button
               type="button"
+              style={btn.primary}
               onClick={() => {
                 try {
                   rtcPeerRef.current?.sendReplica(replica, 0);
-                  setRtcStatus('Sent SyncEnvelope over DataChannel.');
+                  setRtcStatus(t('sync_webrtcSent'));
                 } catch (err) {
-                  setRtcError(err instanceof Error ? err.message : 'Send failed. Use QR sync above.');
+                  setRtcError(err instanceof Error ? err.message : t('sync_webrtcError'));
                 }
               }}
             >
-              Send State via WebRTC
+              {t('sync_webrtcSendState')}
             </button>
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap' }}>
           <input
             type="text"
             value={rtcSignalInput}
             onChange={(e) => setRtcSignalInput(e.target.value)}
-            placeholder="Paste SignalEnvelope blob"
+            placeholder={t('sync_webrtcPlaceholder')}
+            style={{ ...inputStyle, flex: 1, minWidth: 200 }}
           />
           <button
             type="button"
+            style={btn.secondary}
             onClick={() => {
               setRtcError(null);
               try {
@@ -355,10 +368,10 @@ export function SyncView() {
                   const peer = new WebRtcSyncPeer({
                     onChannelOpen: () => {
                       setRtcOpen(true);
-                      setRtcStatus('DataChannel "sync" open.');
+                      setRtcStatus(t('sync_webrtcChannelOpen'));
                     },
                     onEnvelope: (env) => {
-                      setRtcStatus(`Received SyncEnvelope from ${env.from}.`);
+                      setRtcStatus(`SyncEnvelope — ${env.from}`);
                     },
                     onError: (msg) => {
                       setRtcError(msg);
@@ -371,43 +384,43 @@ export function SyncView() {
                     .then((ans) => {
                       setRtcChunks(ans.chunks);
                       setRtcFrameIdx(0);
-                      setRtcStatus(`Answer ready (${ans.chunks.length} QR chunks).`);
+                      setRtcStatus(`Answer (${ans.chunks.length} QR chunks).`);
                     })
                     .catch((err) => {
-                      setRtcError(err instanceof Error ? err.message : 'Failed to accept offer. Use QR sync above.');
+                      setRtcError(err instanceof Error ? err.message : t('sync_webrtcError'));
                     });
                 } else if (rtcPeerRef.current) {
                   void rtcPeerRef.current
                     .acceptAnswer(sig.sdp)
                     .then(() => setRtcStatus('Answer accepted; connecting...'))
                     .catch((err) => {
-                      setRtcError(err instanceof Error ? err.message : 'Failed to accept answer. Use QR sync above.');
+                      setRtcError(err instanceof Error ? err.message : t('sync_webrtcError'));
                     });
                 }
               } catch {
-                setRtcError('Invalid SignalEnvelope. Use QR Sync above as fallback.');
+                setRtcError(t('sync_webrtcError'));
               }
             }}
           >
-            Apply Signal Blob
+            {t('sync_webrtcApplySignal')}
           </button>
         </div>
 
         {rtcQrUrl && rtcChunks && (
-          <div>
-            <div style={{ fontSize: 12 }}>
-              Signal QR {(rtcFrameIdx % rtcChunks.length) + 1} of {rtcChunks.length}
+          <div style={{ display: 'grid', gap: space.xs }}>
+            <div style={{ fontSize: font.sizeSm, color: colors.textMuted }}>
+              Signal QR {(rtcFrameIdx % rtcChunks.length) + 1} {t('sync_of')} {rtcChunks.length}
             </div>
             <img src={rtcQrUrl} alt="WebRTC Signal QR" width={220} height={220} />
           </div>
         )}
-        {rtcStatus && <div style={{ fontSize: 13 }}>{rtcStatus}</div>}
+        {rtcStatus && <div style={{ fontSize: font.sizeMd }}>{rtcStatus}</div>}
         {rtcError && (
-          <div role="alert" style={{ color: '#991b1b', fontSize: 13 }}>
-            {rtcError} — <strong>Fallback:</strong> Use QR Sync above.
+          <div role="alert" style={alert.danger}>
+            {rtcError} — <strong>{t('sync_webrtcFallbackLabel')}</strong> {t('sync_webrtcUseQr')}
           </div>
         )}
       </div>
-    </section>
+    </div>
   );
 }

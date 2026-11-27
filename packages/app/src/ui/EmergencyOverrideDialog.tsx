@@ -1,7 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { getEngineErrorMessage, parsePositiveIntQty } from './error-messages';
 import { emergencyIssue, type ItemId } from '@resiliolog/crdt-core';
+import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
+import { getEngineErrorMessage, parsePositiveIntQty } from './error-messages';
+import { alert, btn, card, colors, font, input as inputStyle, label as labelStyle, space } from './styles';
 
 interface EmergencyOverrideDialogProps {
   readonly itemId: ItemId;
@@ -23,6 +25,7 @@ export function EmergencyOverrideDialog({
   onSuccess,
 }: EmergencyOverrideDialogProps) {
   const { run } = useReplica();
+  const { t, lang } = useLang();
   const [qtyStr, setQtyStr] = useState(initialQty || '1');
   const [reason, setReason] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -35,15 +38,15 @@ export function EmergencyOverrideDialog({
 
     const qty = parsePositiveIntQty(qtyStr);
     if (qty === null) {
-      setErrorMsg(getEngineErrorMessage('INVALID_QTY'));
+      setErrorMsg(getEngineErrorMessage('INVALID_QTY', lang));
       return;
     }
     if (reason.trim().length < 3) {
-      setErrorMsg(getEngineErrorMessage('REASON_REQUIRED'));
+      setErrorMsg(getEngineErrorMessage('REASON_REQUIRED', lang));
       return;
     }
     if (!confirmed) {
-      setErrorMsg('Please confirm that this is a genuine medical emergency override.');
+      setErrorMsg(t('override_confirmRequired'));
       return;
     }
 
@@ -58,7 +61,7 @@ export function EmergencyOverrideDialog({
         }),
       );
       if (!res.ok) {
-        setErrorMsg(getEngineErrorMessage(res.error));
+        setErrorMsg(getEngineErrorMessage(res.error, lang));
         return;
       }
       onSuccess();
@@ -73,74 +76,78 @@ export function EmergencyOverrideDialog({
       aria-modal="true"
       aria-labelledby="override-dialog-title"
       style={{
-        marginTop: 12,
-        padding: 16,
-        border: '2px solid #dc2626',
-        borderRadius: 8,
-        backgroundColor: '#fef2f2',
+        ...card,
+        border: `2px solid ${colors.danger}`,
+        backgroundColor: colors.dangerBg,
+        marginTop: space.md,
       }}
     >
-      <h3 id="override-dialog-title" style={{ marginTop: 0, color: '#991b1b' }}>
-        Emergency Override — {itemName}
+      <h3 id="override-dialog-title" style={{ marginTop: 0, color: colors.dangerText, fontSize: font.sizeLg }}>
+        {t('override_title')} — {itemName}
       </h3>
-      <p style={{ fontSize: 13, color: '#7f1d1d', marginTop: 0 }}>
-        This bypasses local quota checks and records an audited deficit.
+      <p style={{ fontSize: font.sizeMd, color: colors.dangerText, marginTop: 0 }}>
+        {t('override_warning')}
       </p>
 
-      <form onSubmit={(e) => void handleSubmit(e)} style={{ display: 'grid', gap: 10 }}>
-        <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-          <span>Quantity (whole number &ge; 1)</span>
+      <form onSubmit={(e) => void handleSubmit(e)} style={{ display: 'grid', gap: space.md }}>
+        <label style={labelStyle}>
+          <span>{t('override_qtyLabel')}</span>
           <input
             type="number"
             min={1}
             step={1}
             value={qtyStr}
             onChange={(e) => setQtyStr(e.target.value)}
+            style={inputStyle}
           />
         </label>
 
-        <label style={{ display: 'grid', gap: 4, fontSize: 13 }}>
-          <span>Reason (required, 3–200 chars)</span>
+        <label style={labelStyle}>
+          <span>{t('override_reasonLabel')}</span>
           <textarea
             rows={2}
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            placeholder="e.g. Critical patient needs insulin immediately"
+            placeholder={t('override_reasonPlaceholder')}
+            style={{ ...inputStyle, minHeight: 64, resize: 'vertical' }}
           />
         </label>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#7f1d1d' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: space.sm, fontSize: font.sizeMd, color: colors.dangerText, cursor: 'pointer' }}>
           <input
             type="checkbox"
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
+            style={{ width: 18, height: 18 }}
           />
-          <span>I confirm this emergency override will be audited.</span>
+          <span>{t('override_confirmCheck')}</span>
         </label>
 
         {errorMsg && (
-          <div role="alert" style={{ color: '#991b1b', fontWeight: 600, fontSize: 13 }}>
+          <div role="alert" style={{ ...alert.danger, fontWeight: font.weightSemibold }}>
             {errorMsg}
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: space.sm, flexWrap: 'wrap' }}>
           <button
             type="submit"
             disabled={submitting}
             style={{
-              backgroundColor: '#dc2626',
-              color: '#ffffff',
-              border: 'none',
-              padding: '8px 12px',
-              borderRadius: 4,
-              cursor: 'pointer',
+              ...btn.primary,
+              backgroundColor: colors.danger,
+              opacity: submitting ? 0.6 : 1,
             }}
           >
-            Confirm Emergency Override
+            {t('override_submit')}
           </button>
-          <button type="button" onClick={onClose} disabled={submitting}>
-            Cancel
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            style={btn.secondary}
+          >
+            {t('override_cancel')}
           </button>
         </div>
       </form>
