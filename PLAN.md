@@ -22,7 +22,7 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 
 ## Day 1 — Thu 26 Nov: Foundation (Role B)
 - [x] **B-01** Install deps and verify scaffold: run `scripts/bootstrap.sh`, commit lockfile, record versions in `docs/TECH-STACK.md` §9 (scaffold already provided) — see prompt P-01 *(done: fixed `packages/sync/package.json` name/scripts, installed deps via pnpm 10.34.9, `typecheck` & `test` pass)*
-- [ ] **B-02** Re-confirm `schema.json` with Role C; write Zod mirror + test validating `examples` in schema.json
+- [x] **B-02** Re-confirm `schema.json` with Role C; write Zod mirror + test validating `examples` in schema.json *(done: implemented `packages/sync/src/schemas.ts` + W7 test validating `schema.json` `examples[0]` and CRC-32 `4bd32532`)*
 - [x] **B-03** Core types, `Result`, Lamport (`compareLamport`, `tagOf`, `tick`, `receive`), `canonicalize` *(done: implemented `lamport.ts`, `canonicalize.ts`, and 7 unit/property tests at 1000 runs)*
 - [x] **B-04** PN-Counter + unit tests *(done: implemented `pn-counter.ts` and 8 unit/property tests L1–L5 at 1000 runs)*
 - [x] **B-05** OR-Set (tag-based, tombstone set) + unit tests *(done: implemented `or-set.ts` and 7 unit/property tests including add-wins, tag conflict, Lamport sort, and L1–L5 at 1000 runs)*
@@ -34,9 +34,9 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 - [x] **B-08** Bounded Counter (R matrix, U, O) + invariant tests (rights ≥ 0, value ≥ 0 without override) *(done: implemented all `bc*` functions in `bounded-counter.ts` + 5 tests B1–B4 & L1–L5 at 1000 runs)*
 - [x] **B-09** Item operations: `createItem`, `receive`, `issue`, `transferRights`, `emergencyIssue` (ledger + quota + log updated atomically) *(done: implemented `ops.ts` + `queries.ts` (`itemSummary`) + 5 tests including B5, override, void, error codes)*
 - [x] **B-10** Top-up trigger: after `issue`, if remainingRatio ≤ 0.15 → enqueue request (deduped) *(done: integrated in `issue` + `resolveTopUp` + B6 test)*
-- [ ] **B-11** `packages/sync`: `makeDelta`, `applyDelta`, envelope, crc32, deflate+base64url, QR chunk/reassemble
+- [x] **B-11** `packages/sync`: `makeDelta`, `applyDelta`, envelope, crc32, deflate+base64url, QR chunk/reassemble *(done: implemented `schemas.ts`, `canonical-json.ts`, `crc32.ts`, `delta.ts`, `envelope.ts`, `chunks.ts` + W1–W8, C2, C3)*
 - [ ] **B-12** Public API doc for Role C (`packages/*/README.md` or `docs/API.md`) — **by 12:00** so C can wire UI
-- [ ] **B-13** Integration test: 2 replicas, partition → divergent ops → exchange deltas both ways → identical canonical state
+- [x] **B-13** Integration test: 2 replicas, partition → divergent ops → exchange deltas both ways → identical canonical state *(done: verified in `packages/sync/test/delta.test.ts` over `encode -> chunks -> collector -> decode -> applyDelta`)*
 - [ ] **B-14** FREEZE checklist: all P0 done, tests green, tag `v1-freeze`, update `docs/CLAIMS.md`
 - Role C dependency: UI forms call B-09 API; Dexie persistence per ARCHITECTURE §4.
 
