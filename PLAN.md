@@ -27,7 +27,7 @@ Owner defaults to Role B unless stated. Agents: update status + one-line note af
 - [x] **B-04** PN-Counter + unit tests *(done: implemented `pn-counter.ts` and 8 unit/property tests L1–L5 at 1000 runs)*
 - [x] **B-05** OR-Set (tag-based, tombstone set) + unit tests *(done: implemented `or-set.ts` and 7 unit/property tests including add-wins, tag conflict, Lamport sort, and L1–L5 at 1000 runs)*
 - [x] **B-06** `mergeStates` for ResilioState (items, log, queue) *(done: implemented `state.ts` + minimal `bcEmpty`/`bcMerge` in `bounded-counter.ts`)*
-- [x] **B-07** fast-check generators (random op sequences over 2–3 replicas) + law tests (commutative/associative/idempotent) for PN, OR-Set, ResilioState *(done: low-level `arbReachableStates` in `arbitraries.ts` + 7 tests in `state.test.ts` at 1000 runs)*
+- [x] **B-07** fast-check generators (random op sequences over 2–3 replicas) + law tests (commutative/associative/idempotent) for PN, OR-Set, ResilioState *(done: upgraded `arbitraries.ts` to real ops `createItem`/`receiveGoods`/`issue`/`transferRights`/`emergencyIssue`/`voidLogEntry`/`resolveTopUp`; all 8 test files / 44 tests incl. L1–L5, C1, C3, C4, B1, B5 pass at 1000 runs)*
 - Exit criteria: `pnpm test` green; three laws pass ≥ 1000 runs on all implemented types.
 
 ## Day 2 — Fri 27 Nov: Bounded Counter + Sync (Role B) → FREEZE 18:00

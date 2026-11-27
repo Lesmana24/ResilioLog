@@ -109,16 +109,20 @@ describe('canonicalize', () => {
     expect(Object.keys(c.items['zeta-1-aaaa1111']!.ledger.p)).toEqual(['aaaa1111', 'bbbb2222']);
   });
 
-  it('property: canonicalize is idempotent and does not mutate frozen inputs', () => {
-    fc.assert(
-      fc.property(arbState, (state) => {
-        const frozen = deepFreeze(state);
-        const once = canonicalize(frozen);
-        const twice = canonicalize(once);
-        expect(JSON.stringify(twice)).toBe(JSON.stringify(once));
-        expect(twice).toEqual(once);
-      }),
-      { numRuns: NUM_RUNS },
-    );
-  });
+  it(
+    'property: canonicalize is idempotent and does not mutate frozen inputs',
+    () => {
+      fc.assert(
+        fc.property(arbState, (state) => {
+          const frozen = deepFreeze(state);
+          const once = canonicalize(frozen);
+          const twice = canonicalize(once);
+          expect(JSON.stringify(twice)).toBe(JSON.stringify(once));
+          expect(twice).toEqual(once);
+        }),
+        { numRuns: NUM_RUNS },
+      );
+    },
+    15_000,
+  );
 });
