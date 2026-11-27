@@ -23,6 +23,9 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // Header
     installApp: 'Install App',
+    installPwa_hintTitle: 'Install ResilioLog (PWA)',
+    installPwa_hintBody: 'The browser native install prompt is not active right now (usually because localhost uses a self-signed dev certificate or the app is already installed). In Chrome/Edge, you can still install via the browser menu (⋮ → Cast, save, and share → Install page as app), or deploy on trusted HTTPS.',
+    installPwa_close: 'Close',
     language: 'Language',
 
     // Storage warning
@@ -299,6 +302,9 @@ export const translations: Record<Lang, Record<string, string>> = {
 
     // Header
     installApp: 'Pasang Aplikasi',
+    installPwa_hintTitle: 'Pasang ResilioLog (PWA)',
+    installPwa_hintBody: 'Prompt instalasi otomatis browser sedang tidak aktif (biasanya karena localhost dev memakai sertifikat self-signed "Not secure" atau aplikasi sudah terpasang). Di Chrome/Edge, Anda tetap bisa memasang lewat menu browser (⋮ → Simpan dan bagikan / Install page as app), atau jalankan di HTTPS tepercaya.',
+    installPwa_close: 'Tutup',
     language: 'Bahasa',
 
     // Storage warning
