@@ -5,6 +5,7 @@ import {
   IconClipboardList,
   IconCommand,
   IconDashboard,
+  IconDownload,
   IconFileText,
   IconKey,
   IconMenu,
@@ -50,7 +51,8 @@ interface AppLayoutProps {
   page: Page;
   onNavigate: (page: Page) => void;
   children: ReactNode;
-  installPrompt?: (() => void) | null;
+  onInstallClick: () => void;
+  canNativeInstall: boolean;
   storagePersistent?: boolean | null;
   loading?: boolean;
   nodeId?: string | undefined;
@@ -62,7 +64,8 @@ export function AppLayout({
   page,
   onNavigate,
   children,
-  installPrompt,
+  onInstallClick,
+  canNativeInstall,
   storagePersistent,
   loading,
   nodeId,
@@ -411,24 +414,28 @@ export function AppLayout({
             {ALL_NAV.find((n) => n.id === page) ? t(ALL_NAV.find((n) => n.id === page)!.labelKey) : ''}
           </span>
 
-          {installPrompt && (
-            <button
-              type="button"
-              onClick={installPrompt}
-              style={{
-                padding: '7px 14px',
-                background: colors.teal,
-                color: '#fff',
-                border: 'none',
-                borderRadius: radius.md,
-                fontSize: font.sizeSm,
-                fontWeight: font.weightMedium,
-                minHeight: 34,
-              }}
-            >
-              {t('installApp')}
-            </button>
-          )}
+          {/* Install PWA Button (always visible right beside notification bell) */}
+          <button
+            type="button"
+            onClick={onInstallClick}
+            title={t('installPwa_hintTitle')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px',
+              background: canNativeInstall ? colors.teal : '#f3f4f6',
+              color: canNativeInstall ? '#ffffff' : colors.text,
+              border: canNativeInstall ? 'none' : `1px solid ${colors.borderMedium}`,
+              borderRadius: radius.md,
+              fontSize: font.sizeSm,
+              fontWeight: font.weightMedium,
+              minHeight: 36,
+            }}
+          >
+            <IconDownload size={15} color={canNativeInstall ? '#ffffff' : colors.text} />
+            <span>{t('installApp')}</span>
+          </button>
 
           {/* Quick Command Center Bell */}
           <button
