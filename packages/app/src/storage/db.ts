@@ -119,18 +119,20 @@ export async function saveReplicaAtomic(replica: Replica): Promise<void> {
   });
 }
 
+const GENESIS_NODE_ID: NodeId = 'genesis1';
+
 function buildInitialSeedState(nodeId: NodeId): Replica {
   const sembako: ItemState = {
     meta: {
       name: 'Paket Sembako',
       unit: 'Koli',
       category: 'food',
-      createdBy: nodeId,
-      createdAt: { c: 1, n: nodeId },
+      createdBy: GENESIS_NODE_ID,
+      createdAt: { c: 1, n: GENESIS_NODE_ID },
     },
     ledger: {
-      p: { [nodeId]: 300 },
-      n: { [nodeId]: 85 },
+      p: { [GENESIS_NODE_ID]: 300 },
+      n: { [GENESIS_NODE_ID]: 85 },
     },
     quota: {
       R: {
@@ -140,7 +142,7 @@ function buildInitialSeedState(nodeId: NodeId): Replica {
       U: { [nodeId]: 85 },
       O: {},
     },
-    touchedAt: { c: 4, n: nodeId },
+    touchedAt: { c: 4, n: GENESIS_NODE_ID },
   };
 
   const air: ItemState = {
@@ -148,19 +150,19 @@ function buildInitialSeedState(nodeId: NodeId): Replica {
       name: 'Air Bersih 19L',
       unit: 'Unit',
       category: 'water',
-      createdBy: nodeId,
-      createdAt: { c: 2, n: nodeId },
+      createdBy: GENESIS_NODE_ID,
+      createdAt: { c: 2, n: GENESIS_NODE_ID },
     },
     ledger: {
-      p: { [nodeId]: 500 },
-      n: { [nodeId]: 80 },
+      p: { [GENESIS_NODE_ID]: 500 },
+      n: { [GENESIS_NODE_ID]: 80 },
     },
     quota: {
       R: { [nodeId]: { [nodeId]: 500 } },
       U: { [nodeId]: 80 },
       O: {},
     },
-    touchedAt: { c: 5, n: nodeId },
+    touchedAt: { c: 5, n: GENESIS_NODE_ID },
   };
 
   const trauma: ItemState = {
@@ -168,46 +170,46 @@ function buildInitialSeedState(nodeId: NodeId): Replica {
       name: 'Obat Trauma Kit B',
       unit: 'Set',
       category: 'medicine',
-      createdBy: nodeId,
-      createdAt: { c: 3, n: nodeId },
+      createdBy: GENESIS_NODE_ID,
+      createdAt: { c: 3, n: GENESIS_NODE_ID },
     },
     ledger: {
-      p: { [nodeId]: 50 },
-      n: { [nodeId]: 12 },
+      p: { [GENESIS_NODE_ID]: 50 },
+      n: { [GENESIS_NODE_ID]: 12 },
     },
     quota: {
       R: { [nodeId]: { [nodeId]: 50 } },
       U: { [nodeId]: 12 },
       O: {},
     },
-    touchedAt: { c: 6, n: nodeId },
+    touchedAt: { c: 6, n: GENESIS_NODE_ID },
   };
 
   const logAdds: Record<string, DistributionEntry> = {
-    [`${nodeId}:4`]: {
+    [`${GENESIS_NODE_ID}:4`]: {
       kind: 'receive',
       itemId: 'sembako',
       qty: 25,
-      by: nodeId,
-      ts: { c: 4, n: nodeId },
+      by: GENESIS_NODE_ID,
+      ts: { c: 4, n: GENESIS_NODE_ID },
       counterparty: 'Petugas #04',
       wallTime: '2026-11-26T07:22:00.000Z',
     },
-    [`${nodeId}:5`]: {
+    [`${GENESIS_NODE_ID}:5`]: {
       kind: 'receive',
       itemId: 'air-19l',
       qty: 50,
-      by: nodeId,
-      ts: { c: 5, n: nodeId },
+      by: GENESIS_NODE_ID,
+      ts: { c: 5, n: GENESIS_NODE_ID },
       counterparty: 'Tangki 2',
       wallTime: '2026-11-26T07:15:00.000Z',
     },
-    [`${nodeId}:6`]: {
+    [`${GENESIS_NODE_ID}:6`]: {
       kind: 'issue',
       itemId: 'trauma-kit',
       qty: 5,
-      by: nodeId,
-      ts: { c: 6, n: nodeId },
+      by: GENESIS_NODE_ID,
+      ts: { c: 6, n: GENESIS_NODE_ID },
       counterparty: 'Medis 1',
       wallTime: '2026-11-26T06:58:00.000Z',
     },

@@ -6,8 +6,16 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const NGROK_HOSTS = ['.ngrok-free.dev', '.ngrok-free.app', '.ngrok.io'];
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    allowedHosts: NGROK_HOSTS,
+  },
+  preview: {
+    allowedHosts: NGROK_HOSTS,
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

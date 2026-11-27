@@ -295,4 +295,64 @@ describe('packages/app integration with real crdt-core & sync', () => {
 
     expect(canonicalize(nodeA.state)).toEqual(canonicalize(nodeB.state));
   });
+
+  it('7. 2 independent physical phones seeded with shared genesis1 do not double-count initial stock on QR merge', () => {
+    const genesis = makeSeededReplica('genesis1');
+    let phoneA: Replica = {
+      ...genesis,
+      nodeId: 'phone1aa',
+      state: {
+        ...genesis.state,
+        items: {
+          ...genesis.state.items,
+          sembako: {
+            ...genesis.state.items['sembako']!,
+            quota: {
+              R: { phone1aa: { phone1aa: 100 }, poskob07: { poskob07: 200 } },
+              U: { phone1aa: 85 },
+              O: {},
+            },
+          },
+        },
+      },
+    };
+    let phoneB: Replica = {
+      ...genesis,
+      nodeId: 'phone2bb',
+      state: {
+        ...genesis.state,
+        items: {
+          ...genesis.state.items,
+          sembako: {
+            ...genesis.state.items['sembako']!,
+            quota: {
+              R: { phone2bb: { phone2bb: 100 }, poskob07: { poskob07: 200 } },
+              U: { phone2bb: 85 },
+              O: {},
+            },
+          },
+        },
+      },
+    };
+
+    const rxB = receiveGoods(phoneB, 'sembako', 10, {
+      wallTime: '2026-11-27T08:30:00.000Z',
+      counterparty: 'Phone B Volunteer',
+    });
+    expect(rxB.ok).toBe(true);
+    if (!rxB.ok) return;
+    phoneB = rxB.value;
+
+    const envB = buildEnvelope(phoneB, 0, 'full');
+    const col = new ChunkCollector();
+    for (const c of chunkBlob(encodeEnvelope(envB), envB.msgId)) col.add(c);
+    const decB = decodeEnvelope(col.assemble());
+    phoneA = applyDelta(phoneA, decB.payload as ResilioState, decB.until);
+
+    // PN-Counter ledger did NOT double-count genesis (300 - 85 + 10 = 225, NOT 440)
+    const summary = itemSummary(phoneA.state, 'sembako')!;
+    expect(summary.ledgerIn - summary.ledgerOut).toBe(225);
+    // Bounded Counter global value = poskob07 (200) + phoneA net (15) + phoneB net (15 + 10) = 240
+    expect(summary.value).toBe(240);
+  });
 });

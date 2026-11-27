@@ -1,12 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
+  Camera,
   CheckCircle2,
   Clock,
   Copy,
   Droplets,
   Navigation,
   Package,
+  Pause,
+  Play,
   QrCode,
   Radio,
   RefreshCw,
@@ -16,13 +19,14 @@ import {
   User,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import type { DistributionEntry, Tag } from '@resiliolog/crdt-core';
+import type { DistributionEntry, Result, Tag } from '@resiliolog/crdt-core';
 import type { ChunkProgress } from '@resiliolog/sync';
-import type { AppLanguage } from '../engine/errorMessages';
+import type { AnyEngineErrorCode, AppLanguage } from '../engine/errorMessages';
 import { COPY } from '../i18n/translations';
 import type { ItemViewModel } from '../state/useReplica';
 import type { PeerCursorRow } from '../storage/db';
 import { MobileBottomNav, type MobileTab } from './MobileBottomNav';
+import { QrScannerModal } from './QrScannerModal';
 
 interface P2PSyncScreenProps {
   activeTab: MobileTab;
@@ -39,7 +43,7 @@ interface P2PSyncScreenProps {
   qrProgress: ChunkProgress | null;
   onBroadcastDelta: () => Promise<void>;
   getQrChunks: () => { chunks: string[]; msgId: string; crc32: string; totalChars: number };
-  onImportQrFrame: (frameText: string) => Promise<unknown>;
+  onImportQrFrame: (frameText: string) => Promise<Result<ChunkProgress, AnyEngineErrorCode>>;
   onSimulateCourierArrival: () => Promise<void>;
 }
 
@@ -84,6 +88,8 @@ export function P2PSyncScreen({
 }: P2PSyncScreenProps) {
   const t = COPY[lang];
   const [qrPanelOpen, setQrPanelOpen] = useState(true);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [autoCycle, setAutoCycle] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
   const [frameInput, setFrameInput] = useState('');
   const [syncingMesh, setSyncingMesh] = useState(false);
@@ -92,6 +98,14 @@ export function P2PSyncScreen({
   const safeFrameIdx =
     qrBundle.chunks.length > 0 ? Math.min(frameIndex, qrBundle.chunks.length - 1) : 0;
   const activeFrame = qrBundle.chunks[safeFrameIdx] ?? '';
+
+  useEffect(() => {
+    if (!qrPanelOpen || !autoCycle || qrBundle.chunks.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setFrameIndex((i) => (i + 1) % qrBundle.chunks.length);
+    }, 650);
+    return () => window.clearInterval(timer);
+  }, [qrPanelOpen, autoCycle, qrBundle.chunks.length]);
 
   const peerCount = Object.keys(nearbyPeers).length;
   const lastCursorTime = cursors[0]?.lastSyncAt
@@ -238,6 +252,29 @@ export function P2PSyncScreen({
         <section className="flex flex-col gap-2.5">
           <button
             type="button"
+            onClick={() => setScannerOpen(true)}
+            className="flex w-full items-center justify-between rounded-2xl border border-[#0F172A]/20 bg-[#0F172A] p-4 text-left text-white shadow-sm transition-colors hover:bg-[#1E293B] active:scale-[0.99]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/10 text-white">
+                <Camera className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="font-display text-sm font-bold">
+                  {lang === 'en' ? 'Scan Peer QR (Camera)' : 'Pindai QR Peer (Kamera)'}
+                </div>
+                <div className="text-xs text-slate-300">
+                  {lang === 'en'
+                    ? 'Sync two physical phones offline with zero data'
+                    : 'Sinkronkan 2 HP fisik secara offline tanpa kuota'}
+                </div>
+              </div>
+            </div>
+            <ArrowRight className="h-5 w-5 shrink-0 text-white" />
+          </button>
+
+          <button
+            type="button"
             onClick={handleMeshSync}
             className="flex w-full items-center justify-between rounded-2xl border border-emerald-200 bg-white p-4 text-left shadow-xs transition-colors hover:bg-emerald-50/40 active:scale-[0.99]"
           >
@@ -249,7 +286,11 @@ export function P2PSyncScreen({
                 <div className="font-display text-sm font-bold text-[#0F172A]">
                   {t.nearbySyncTitle}
                 </div>
-                <div className="text-xs text-slate-500">{t.nearbySyncSub}</div>
+                <div className="text-xs text-slate-500">
+                  {lang === 'en'
+                    ? 'Sync open tabs on this device (BroadcastChannel)'
+                    : 'Sinkron antar-tab di perangkat ini (BroadcastChannel)'}
+                </div>
               </div>
             </div>
             <ArrowRight className="h-5 w-5 shrink-0 text-[#059669]" />
@@ -278,20 +319,36 @@ export function P2PSyncScreen({
         {/* Expandable Chunked QR Courier Transfer Panel */}
         {qrPanelOpen && (
           <section className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
                 {lang === 'en' ? 'RL1 QR Frame' : 'Frame QR RL1'} ({safeFrameIdx + 1} /{' '}
                 {Math.max(1, qrBundle.chunks.length)})
               </span>
-              <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-600">
-                CRC {qrBundle.crc32 || '00000000'} • {qrBundle.totalChars}B
-              </span>
+              <div className="flex items-center gap-1.5">
+                {qrBundle.chunks.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setAutoCycle((v) => !v)}
+                    className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                      autoCycle
+                        ? 'bg-emerald-50 text-[#059669] border border-emerald-200'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {autoCycle ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                    <span>{autoCycle ? 'Auto' : 'Paused'}</span>
+                  </button>
+                )}
+                <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-semibold text-slate-600">
+                  CRC {qrBundle.crc32 || '00000000'}
+                </span>
+              </div>
             </div>
 
             {activeFrame && (
               <div className="flex flex-col items-center gap-2 rounded-xl border border-slate-200/60 bg-slate-50 p-3">
                 <div className="rounded-xl bg-white p-2.5 shadow-xs">
-                  <QRCodeSVG value={activeFrame} size={164} level="M" />
+                  <QRCodeSVG value={activeFrame} size={200} level="M" marginSize={2} />
                 </div>
                 <div className="flex w-full items-center justify-between gap-2 text-xs">
                   <button
@@ -441,6 +498,14 @@ export function P2PSyncScreen({
           sync: t.navSync,
           history: t.navHistory,
         }}
+      />
+
+      <QrScannerModal
+        open={scannerOpen}
+        lang={lang}
+        qrProgress={qrProgress}
+        onScanFrame={onImportQrFrame}
+        onClose={() => setScannerOpen(false)}
       />
     </div>
   );
