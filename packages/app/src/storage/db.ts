@@ -17,6 +17,7 @@ export interface StateRow {
 export interface CursorRow {
   readonly peerId: NodeId;
   readonly until: number;
+  readonly lastSyncAt?: string;
 }
 
 export class ResilioDatabase extends Dexie {
@@ -108,8 +109,15 @@ export async function setCursor(
   peerId: NodeId,
   until: number,
   database: ResilioDatabase = db,
+  lastSyncAt: string = new Date().toISOString(),
 ): Promise<void> {
-  await database.cursors.put({ peerId, until });
+  await database.cursors.put({ peerId, until, lastSyncAt });
+}
+
+export async function listCursors(
+  database: ResilioDatabase = db,
+): Promise<readonly CursorRow[]> {
+  return database.cursors.toArray();
 }
 
 export async function requestPersistence(): Promise<boolean> {
