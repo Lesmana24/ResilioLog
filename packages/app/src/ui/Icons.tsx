@@ -19,6 +19,46 @@ const baseProps = (size: number, color: string, style?: CSSProperties) => ({
   'aria-hidden': true as const,
 });
 
+export function ResilioLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+      style={{ flexShrink: 0, display: 'block' }}
+    >
+      <defs>
+        <linearGradient id="resilioLogoGrad" x1="2" y1="2" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#6366f1" />
+          <stop offset="100%" stopColor="#4338ca" />
+        </linearGradient>
+      </defs>
+      {/* Rounded shield-tile base */}
+      <rect x="2" y="2" width="28" height="28" rx="8" fill="url(#resilioLogoGrad)" />
+      {/* Isometric relief cube + sync nodes */}
+      <path
+        d="M16 7.5L23.5 11.75V20.25L16 24.5L8.5 20.25V11.75L16 7.5Z"
+        stroke="#ffffff"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.5 11.75L16 16L23.5 11.75M16 16V24.5"
+        stroke="#ffffff"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="16" cy="7.5" r="2" fill="#a5b4fc" />
+      <circle cx="23.5" cy="20.25" r="2" fill="#a5b4fc" />
+      <circle cx="8.5" cy="20.25" r="2" fill="#a5b4fc" />
+    </svg>
+  );
+}
+
 export function IconDashboard({ size = 18, color = 'currentColor', style }: IconProps) {
   return (
     <svg {...baseProps(size, color, style)}>
@@ -228,6 +268,24 @@ export function IconCamera({ size = 16, color = 'currentColor', style }: IconPro
     <svg {...baseProps(size, color, style)}>
       <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
       <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
+export function IconTrendingUp({ size = 18, color = 'currentColor', style }: IconProps) {
+  return (
+    <svg {...baseProps(size, color, style)}>
+      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+      <polyline points="16 7 22 7 22 13" />
+    </svg>
+  );
+}
+
+export function IconTrendingDown({ size = 18, color = 'currentColor', style }: IconProps) {
+  return (
+    <svg {...baseProps(size, color, style)}>
+      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+      <polyline points="16 17 22 17 22 11" />
     </svg>
   );
 }

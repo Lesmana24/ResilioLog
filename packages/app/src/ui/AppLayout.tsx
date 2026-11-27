@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { useLang } from '../i18n/useLang';
 import {
+  IconBell,
   IconClipboardList,
   IconCommand,
   IconDashboard,
@@ -8,8 +9,10 @@ import {
   IconKey,
   IconMenu,
   IconPackage,
+  IconQrCode,
   IconRefresh,
   IconSettings,
+  ResilioLogo,
 } from './Icons';
 import { colors, font, layout, radius, space } from './styles';
 
@@ -28,15 +31,20 @@ interface NavItem {
   renderIcon: (color: string) => ReactNode;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', labelKey: 'nav_dashboard', renderIcon: (c) => <IconDashboard size={18} color={c} /> },
-  { id: 'field', labelKey: 'nav_field', renderIcon: (c) => <IconPackage size={18} color={c} /> },
-  { id: 'command-center', labelKey: 'nav_commandCenter', renderIcon: (c) => <IconCommand size={18} color={c} /> },
-  { id: 'inventory', labelKey: 'nav_inventory', renderIcon: (c) => <IconClipboardList size={18} color={c} /> },
-  { id: 'sync', labelKey: 'nav_sync', renderIcon: (c) => <IconRefresh size={18} color={c} /> },
-  { id: 'activity-log', labelKey: 'nav_activityLog', renderIcon: (c) => <IconFileText size={18} color={c} /> },
-  { id: 'settings', labelKey: 'nav_settings', renderIcon: (c) => <IconSettings size={18} color={c} /> },
+const MAIN_NAV: NavItem[] = [
+  { id: 'dashboard', labelKey: 'nav_dashboard', renderIcon: (c) => <IconDashboard size={17} color={c} /> },
+  { id: 'field', labelKey: 'nav_field', renderIcon: (c) => <IconPackage size={17} color={c} /> },
+  { id: 'command-center', labelKey: 'nav_commandCenter', renderIcon: (c) => <IconCommand size={17} color={c} /> },
+  { id: 'inventory', labelKey: 'nav_inventory', renderIcon: (c) => <IconClipboardList size={17} color={c} /> },
+  { id: 'activity-log', labelKey: 'nav_activityLog', renderIcon: (c) => <IconFileText size={17} color={c} /> },
 ];
+
+const SYSTEM_NAV: NavItem[] = [
+  { id: 'sync', labelKey: 'nav_sync', renderIcon: (c) => <IconRefresh size={17} color={c} /> },
+  { id: 'settings', labelKey: 'nav_settings', renderIcon: (c) => <IconSettings size={17} color={c} /> },
+];
+
+const ALL_NAV = [...MAIN_NAV, ...SYSTEM_NAV];
 
 interface AppLayoutProps {
   page: Page;
@@ -63,6 +71,43 @@ export function AppLayout({
 }: AppLayoutProps) {
   const { t, lang, setLang } = useLang();
 
+  function renderNavGroup(items: NavItem[]) {
+    return items.map((item) => {
+      const isActive = page === item.id;
+      const iconColor = isActive ? colors.sidebarActiveText : colors.sidebarText;
+      return (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => {
+            onNavigate(item.id);
+            if (sidebarOpen) onToggleSidebar();
+          }}
+          aria-current={isActive ? 'page' : undefined}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 12px',
+            borderRadius: radius.md,
+            border: 'none',
+            background: isActive ? colors.sidebarActiveBg : 'transparent',
+            color: isActive ? colors.sidebarActiveText : colors.sidebarText,
+            fontSize: font.sizeMd,
+            fontWeight: isActive ? font.weightSemibold : font.weightMedium,
+            textAlign: 'left',
+            width: '100%',
+            transition: 'background 0.15s, color 0.15s',
+            minHeight: 38,
+          }}
+        >
+          {item.renderIcon(iconColor)}
+          <span>{t(item.labelKey)}</span>
+        </button>
+      );
+    });
+  }
+
   return (
     <div
       style={{
@@ -75,10 +120,9 @@ export function AppLayout({
         position: 'relative',
       }}
     >
-      {/* Global base styles */}
       <style>{`
         *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; font-family: ${font.family}; }
+        body { margin: 0; font-family: ${font.family}; background: ${colors.pageBg}; }
         button, input, select, textarea { font-family: inherit; }
         button { cursor: pointer; }
         .resilio-sidebar {
@@ -113,26 +157,24 @@ export function AppLayout({
             display: 'none',
             position: 'fixed',
             inset: 0,
-            background: 'rgba(15, 23, 42, 0.3)',
-            backdropFilter: 'blur(2px)',
+            background: 'rgba(17, 24, 39, 0.28)',
             zIndex: 99,
           }}
         />
       )}
 
-      {/* Light Theme Sidebar */}
+      {/* Clean Light Sidebar (Prodex style) */}
       <aside
         className="resilio-sidebar"
         style={{
           width: layout.sidebarWidth,
           minWidth: layout.sidebarWidth,
           background: colors.sidebar,
-          backdropFilter: 'blur(12px)',
           borderRight: `1px solid ${colors.sidebarBorder}`,
           display: 'flex',
           flexDirection: 'column',
-          padding: `${space.lg}px ${space.md}px`,
-          gap: space.sm,
+          padding: `${space.md}px ${space.md}px`,
+          gap: space.md,
           zIndex: 100,
           position: 'fixed' as const,
           top: 0,
@@ -142,143 +184,181 @@ export function AppLayout({
         }}
         aria-label="Sidebar navigation"
       >
-        {/* Logo */}
+        {/* Brand Logo */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: space.sm,
-            marginBottom: space.md,
-            paddingBottom: space.md,
-            borderBottom: `1px solid ${colors.borderLight}`,
+            gap: 10,
+            padding: '4px 4px',
           }}
+        >
+          <ResilioLogo size={30} />
+          <div
+            style={{
+              fontSize: 17,
+              fontWeight: font.weightBold,
+              color: colors.text,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            {t('appName')}
+          </div>
+        </div>
+
+        {/* Node Identity Pill Card (like Uxerflow selector in Prodex) */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '9px 12px',
+            background: '#ffffff',
+            border: `1px solid ${colors.borderLight}`,
+            borderRadius: radius.md,
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+          title="Local Node ID"
         >
           <div
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: radius.md,
-              background: colors.teal,
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: '#111827',
+              color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 18,
-              color: '#fff',
-              fontWeight: font.weightBold,
               flexShrink: 0,
             }}
           >
-            R
+            <IconKey size={12} color="#ffffff" />
           </div>
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: font.sizeLg,
-                fontWeight: font.weightBold,
+                fontSize: font.sizeSm,
+                fontWeight: font.weightSemibold,
                 color: colors.text,
-                lineHeight: 1.2,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
               }}
             >
-              {t('appName')}
+              {nodeId ?? '...'}
             </div>
-            <div
-              style={{
-                fontSize: 10,
-                color: colors.textMuted,
-                lineHeight: 1.3,
-              }}
-            >
-              Relief Logistics
-            </div>
+            <div style={{ fontSize: 10, color: colors.textMuted }}>Offline-First Node</div>
           </div>
         </div>
 
-        {/* Nav items */}
-        <nav aria-label="Primary navigation" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {NAV_ITEMS.map((item) => {
-            const isActive = page === item.id;
-            const iconColor = isActive ? colors.sidebarActiveText : colors.sidebarText;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  onNavigate(item.id);
-                  if (sidebarOpen) onToggleSidebar();
-                }}
-                aria-current={isActive ? 'page' : undefined}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 12,
-                  padding: `10px ${space.md}px`,
-                  borderRadius: radius.md,
-                  border: 'none',
-                  background: isActive ? colors.sidebarActiveBg : 'transparent',
-                  color: isActive ? colors.sidebarActiveText : colors.sidebarText,
-                  fontSize: font.sizeMd,
-                  fontWeight: isActive ? font.weightSemibold : font.weightMedium,
-                  textAlign: 'left',
-                  width: '100%',
-                  transition: 'background 0.15s, color 0.15s',
-                  minHeight: 40,
-                }}
-              >
-                {item.renderIcon(iconColor)}
-                <span>{t(item.labelKey)}</span>
-              </button>
-            );
-          })}
+        {/* Grouped Navigation */}
+        <nav aria-label="Primary navigation" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: font.weightSemibold,
+              color: colors.textSubtle,
+              letterSpacing: '0.06em',
+              padding: '6px 12px 4px',
+            }}
+          >
+            {t('nav_groupMain')}
+          </div>
+          {renderNavGroup(MAIN_NAV)}
+
+          <div
+            style={{
+              fontSize: 10.5,
+              fontWeight: font.weightSemibold,
+              color: colors.textSubtle,
+              letterSpacing: '0.06em',
+              padding: '14px 12px 4px',
+            }}
+          >
+            {t('nav_groupSystem')}
+          </div>
+          {renderNavGroup(SYSTEM_NAV)}
         </nav>
 
-        {/* Language switcher at bottom */}
+        {/* Bottom Quick Sync & Language Card */}
         <div
           style={{
             marginTop: 'auto',
-            paddingTop: space.md,
-            borderTop: `1px solid ${colors.borderLight}`,
-            display: 'flex',
-            gap: space.sm,
+            padding: 12,
+            background: '#ffffff',
+            border: `1px solid ${colors.borderLight}`,
+            borderRadius: radius.lg,
+            display: 'grid',
+            gap: 10,
           }}
         >
           <button
             type="button"
-            onClick={() => setLang('en')}
+            onClick={() => {
+              onNavigate('sync');
+              if (sidebarOpen) onToggleSidebar();
+            }}
             style={{
-              flex: 1,
-              padding: '6px 0',
-              borderRadius: radius.sm,
-              border: lang === 'en' ? 'none' : `1px solid ${colors.borderLight}`,
-              background: lang === 'en' ? colors.sidebarActiveBg : '#f8fafc',
-              color: lang === 'en' ? '#ffffff' : colors.sidebarText,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '9px 12px',
+              background: '#111827',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: radius.md,
               fontSize: font.sizeSm,
-              fontWeight: font.weightSemibold,
-              minHeight: 34,
+              fontWeight: font.weightMedium,
+              minHeight: 36,
             }}
           >
-            EN
+            <IconQrCode size={15} color="#ffffff" />
+            <span>{t('dashboard_goSync')}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setLang('id')}
-            style={{
-              flex: 1,
-              padding: '6px 0',
-              borderRadius: radius.sm,
-              border: lang === 'id' ? 'none' : `1px solid ${colors.borderLight}`,
-              background: lang === 'id' ? colors.sidebarActiveBg : '#f8fafc',
-              color: lang === 'id' ? '#ffffff' : colors.sidebarText,
-              fontSize: font.sizeSm,
-              fontWeight: font.weightSemibold,
-              minHeight: 34,
-            }}
-          >
-            ID
-          </button>
+
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button
+              type="button"
+              onClick={() => setLang('en')}
+              style={{
+                flex: 1,
+                padding: '5px 0',
+                borderRadius: radius.sm,
+                border: lang === 'en' ? `1px solid ${colors.teal}` : `1px solid ${colors.borderLight}`,
+                background: lang === 'en' ? colors.tealLight : '#f9fafb',
+                color: lang === 'en' ? colors.tealDark : colors.sidebarText,
+                fontSize: 11.5,
+                fontWeight: font.weightSemibold,
+                minHeight: 30,
+              }}
+            >
+              EN
+            </button>
+            <button
+              type="button"
+              onClick={() => setLang('id')}
+              style={{
+                flex: 1,
+                padding: '5px 0',
+                borderRadius: radius.sm,
+                border: lang === 'id' ? `1px solid ${colors.teal}` : `1px solid ${colors.borderLight}`,
+                background: lang === 'id' ? colors.tealLight : '#f9fafb',
+                color: lang === 'id' ? colors.tealDark : colors.sidebarText,
+                fontSize: 11.5,
+                fontWeight: font.weightSemibold,
+                minHeight: 30,
+              }}
+            >
+              ID
+            </button>
+          </div>
         </div>
       </aside>
 
-      {/* Main area: header + content */}
+      {/* Main area */}
       <div
         className="resilio-main-area"
         style={{
@@ -289,12 +369,11 @@ export function AppLayout({
           transition: 'margin-left 0.25s ease',
         }}
       >
-        {/* Header */}
+        {/* Clean White Header */}
         <header
           style={{
             height: layout.headerHeight,
-            background: 'rgba(255, 255, 255, 0.85)',
-            backdropFilter: 'blur(10px)',
+            background: colors.headerBg,
             borderBottom: `1px solid ${colors.headerBorder}`,
             display: 'flex',
             alignItems: 'center',
@@ -303,7 +382,6 @@ export function AppLayout({
             flexShrink: 0,
           }}
         >
-          {/* Hamburger */}
           <button
             type="button"
             className="resilio-hamburger"
@@ -312,50 +390,67 @@ export function AppLayout({
             style={{
               background: 'none',
               border: 'none',
-              color: colors.textMuted,
+              color: colors.text,
               padding: '4px 6px',
               borderRadius: radius.sm,
-              cursor: 'pointer',
               alignItems: 'center',
               minHeight: 40,
             }}
           >
-            <IconMenu size={22} color={colors.text} />
+            <IconMenu size={20} color={colors.text} />
           </button>
 
-          {/* Page title */}
           <span
             style={{
-              fontSize: font.sizeLg,
+              fontSize: 18,
               fontWeight: font.weightSemibold,
               color: colors.text,
               flex: 1,
             }}
           >
-            {NAV_ITEMS.find((n) => n.id === page) ? t(NAV_ITEMS.find((n) => n.id === page)!.labelKey) : ''}
+            {ALL_NAV.find((n) => n.id === page) ? t(ALL_NAV.find((n) => n.id === page)!.labelKey) : ''}
           </span>
 
-          {/* Install button */}
           {installPrompt && (
             <button
               type="button"
               onClick={installPrompt}
               style={{
-                padding: '6px 14px',
+                padding: '7px 14px',
                 background: colors.teal,
                 color: '#fff',
                 border: 'none',
                 borderRadius: radius.md,
                 fontSize: font.sizeSm,
-                fontWeight: font.weightSemibold,
-                minHeight: 36,
+                fontWeight: font.weightMedium,
+                minHeight: 34,
               }}
             >
               {t('installApp')}
             </button>
           )}
 
-          {/* Node ID chip */}
+          {/* Quick Command Center Bell */}
+          <button
+            type="button"
+            onClick={() => onNavigate('command-center')}
+            title={t('nav_commandCenter')}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: '#f3f4f6',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: colors.text,
+            }}
+          >
+            <IconBell size={17} color={colors.text} />
+          </button>
+
+          {/* Node ID Pill */}
           <div
             style={{
               padding: '5px 12px',
@@ -364,7 +459,7 @@ export function AppLayout({
               borderRadius: radius.pill,
               fontSize: 12,
               fontWeight: font.weightSemibold,
-              maxWidth: 160,
+              maxWidth: 150,
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -374,7 +469,7 @@ export function AppLayout({
             }}
             title="Your Node ID"
           >
-            <IconKey size={14} color={colors.tealDark} />
+            <IconKey size={13} color={colors.tealDark} />
             <span>{nodeId ?? '...'}</span>
           </div>
         </header>
@@ -384,7 +479,7 @@ export function AppLayout({
           <div
             role="alert"
             style={{
-              padding: '10px 24px',
+              padding: '9px 24px',
               backgroundColor: colors.warningBg,
               borderBottom: `1px solid ${colors.warningBorder}`,
               color: '#92400e',
@@ -396,7 +491,7 @@ export function AppLayout({
           </div>
         )}
 
-        {/* Scrollable content area */}
+        {/* Scrollable Content */}
         <main
           style={{
             flex: 1,

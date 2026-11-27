@@ -11,6 +11,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     appTagline: 'Offline-First Disaster Relief Logistics',
 
     // Navigation
+    nav_groupMain: 'MAIN',
+    nav_groupSystem: 'SYSTEM',
     nav_dashboard: 'Dashboard',
     nav_field: 'Field',
     nav_commandCenter: 'Command Center',
@@ -58,6 +60,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     dashboard_syncStatus: 'Sync Status',
     dashboard_noPeers: 'No peers synced yet.',
     dashboard_nodeInfo: 'Node Info',
+    dashboard_totalIn: 'Total Received',
+    dashboard_stockOverview: 'Stock Flow Overview',
+    dashboard_stockIn: 'Received (In)',
+    dashboard_stockOut: 'Issued (Out)',
+    dashboard_topCategories: 'Stock by Category',
+    dashboard_seeAll: 'See All',
+    dashboard_recentActivity: 'Recent Activity',
+    dashboard_noActivity: 'No activity recorded yet.',
+    dashboard_topItemsTable: 'Inventory Summary',
+    dashboard_goSync: 'Sync Now',
 
     // Field
     field_title: 'Field — Stock & Distribution',
@@ -275,6 +287,8 @@ export const translations: Record<Lang, Record<string, string>> = {
     appTagline: 'Logistik Bantuan Bencana Offline-First',
 
     // Navigation
+    nav_groupMain: 'UTAMA',
+    nav_groupSystem: 'SISTEM',
     nav_dashboard: 'Dasbor',
     nav_field: 'Lapangan',
     nav_commandCenter: 'Pusat Komando',
@@ -322,6 +336,16 @@ export const translations: Record<Lang, Record<string, string>> = {
     dashboard_syncStatus: 'Status Sinkronisasi',
     dashboard_noPeers: 'Belum ada peer yang tersinkron.',
     dashboard_nodeInfo: 'Info Node',
+    dashboard_totalIn: 'Total Diterima',
+    dashboard_stockOverview: 'Ringkasan Arus Stok',
+    dashboard_stockIn: 'Masuk (In)',
+    dashboard_stockOut: 'Keluar (Out)',
+    dashboard_topCategories: 'Stok per Kategori',
+    dashboard_seeAll: 'Lihat Semua',
+    dashboard_recentActivity: 'Aktivitas Terbaru',
+    dashboard_noActivity: 'Belum ada aktivitas tercatat.',
+    dashboard_topItemsTable: 'Ringkasan Inventaris',
+    dashboard_goSync: 'Sinkron Sekarang',
 
     // Field
     field_title: 'Lapangan — Stok & Distribusi',
