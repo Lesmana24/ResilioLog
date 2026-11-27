@@ -13,10 +13,11 @@ export const colors = {
   tealLight: '#e6f4f2',
   tealDark: '#0a5952',
 
-  sidebar: '#1a1a2e',
-  sidebarText: '#e2e8f0',
+  sidebar: 'rgba(255, 255, 255, 0.92)',
+  sidebarBorder: '#e2e8f0',
+  sidebarText: '#475569',
   sidebarMuted: '#94a3b8',
-  sidebarActiveBg: '#0f766e',
+  sidebarActiveBg: '#111827',
   sidebarActiveText: '#ffffff',
 
   headerBg: '#ffffff',
@@ -73,7 +74,7 @@ export const radius = {
 
 // ── Typography ───────────────────────────────────────────────────────────────
 export const font = {
-  family: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
+  family: "'Poppins', system-ui, -apple-system, sans-serif",
   sizeXs: 11,
   sizeSm: 12,
   sizeMd: 14,

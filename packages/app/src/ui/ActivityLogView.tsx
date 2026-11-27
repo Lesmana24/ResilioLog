@@ -2,6 +2,7 @@ import { orsElements, voidLogEntry, type DistributionKind } from '@resiliolog/cr
 import { useState } from 'react';
 import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
+import { IconFileText } from './Icons';
 import { btn, card, colors, font, radius, space } from './styles';
 
 type LogFilter = 'all' | DistributionKind;
@@ -58,7 +59,9 @@ export function ActivityLogView() {
 
       {logEntries.length === 0 ? (
         <div style={{ ...card, color: colors.textMuted, textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: space.md }}>📝</div>
+          <div style={{ marginBottom: space.md }}>
+            <IconFileText size={42} color={colors.textSubtle} />
+          </div>
           <p style={{ margin: 0 }}>{t('activityLog_noEntries')}</p>
         </div>
       ) : (

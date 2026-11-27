@@ -1,6 +1,7 @@
 import { itemSummary, orsElements } from '@resiliolog/crdt-core';
 import { useLang } from '../i18n/useLang';
 import { useReplica } from '../state/useReplica';
+import { IconClipboardList } from './Icons';
 import { badge, card, colors, font, radius, space } from './styles';
 
 export function InventoryView() {
@@ -26,7 +27,9 @@ export function InventoryView() {
 
       {itemEntries.length === 0 ? (
         <div style={{ ...card, color: colors.textMuted, textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: 48, marginBottom: space.md }}>📋</div>
+          <div style={{ marginBottom: space.md }}>
+            <IconClipboardList size={42} color={colors.textSubtle} />
+          </div>
           <p style={{ margin: 0 }}>{t('inventory_noItems')}</p>
         </div>
       ) : (
