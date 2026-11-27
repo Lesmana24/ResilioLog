@@ -27,6 +27,7 @@ import {
   radius,
   space,
 } from './styles';
+import { buildSampleData } from './sample-data';
 
 interface DashboardViewProps {
   onNavigate: (page: Page) => void;
@@ -57,9 +58,10 @@ function CategoryIcon({ category }: { category: string }) {
 }
 
 export function DashboardView({ onNavigate }: DashboardViewProps) {
-  const { replica, loading } = useReplica();
+  const { replica, loading, run } = useReplica();
   const { t } = useLang();
   const [cursors, setCursors] = useState<readonly CursorRow[]>([]);
+  const [loadingSample, setLoadingSample] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -136,6 +138,37 @@ export function DashboardView({ onNavigate }: DashboardViewProps) {
 
   return (
     <div style={{ display: 'grid', gap: space.lg }}>
+      {import.meta.env.DEV && itemEntries.length === 0 && (
+        <div
+          style={{
+            ...card,
+            padding: '12px 18px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            background: colors.tealLight,
+            borderColor: '#c7d2fe',
+          }}
+        >
+          <div style={{ fontSize: font.sizeMd, color: colors.tealDark }}>
+            <strong>DEV-ONLY:</strong> {t('dashboard_noItems')}
+          </div>
+          <button
+            type="button"
+            disabled={loadingSample}
+            onClick={() => {
+              setLoadingSample(true);
+              void run((r) => buildSampleData(r)).finally(() => setLoadingSample(false));
+            }}
+            style={{ ...btn.primary, minHeight: 36, padding: '6px 14px', fontSize: font.sizeSm }}
+          >
+            {t('settings_sampleData')}
+          </button>
+        </div>
+      )}
+
       {/* Row 1: 4 Horizontal KPI Cards (Prodex style) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: space.md }}>
         <HorizontalKpiCard
