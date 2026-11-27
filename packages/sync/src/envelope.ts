@@ -4,7 +4,16 @@ import { canonicalJson } from './canonical-json';
 import { crc32Hex } from './crc32';
 import { makeDelta } from './delta';
 import { SyncError } from './errors';
-import { SyncEnvelopeSchema } from './schemas';
+import { SignalEnvelopeSchema, SyncEnvelopeSchema } from './schemas';
+
+export interface SignalEnvelopeLike {
+  readonly v: 1;
+  readonly type: 'signal';
+  readonly msgId: string;
+  readonly from: string;
+  readonly kind: 'offer' | 'answer';
+  readonly sdp: string;
+}
 
 export interface SyncEnvelopeLike {
   readonly v: 1;
@@ -129,4 +138,41 @@ export function decodeEnvelope(blob: string): SyncEnvelopeLike {
 
   const { to, ...rest } = result.data;
   return to !== undefined ? { ...rest, to } : rest;
+}
+
+export function encodeSignalEnvelope(env: SignalEnvelopeLike): string {
+  const json = JSON.stringify(env);
+  const compressed = deflateSync(textEncoder.encode(json), { level: 9 });
+  return toBase64Url(compressed);
+}
+
+export function decodeSignalEnvelope(blob: string): SignalEnvelopeLike {
+  const compressed = fromBase64Url(blob);
+
+  let inflated: Uint8Array;
+  try {
+    inflated = inflateSync(compressed);
+  } catch {
+    throw new SyncError('BAD_COMPRESSION', 'Failed to inflate signal envelope');
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(textDecoder.decode(inflated));
+  } catch {
+    throw new SyncError('BAD_JSON', 'Invalid JSON in signal envelope');
+  }
+
+  if (parsed !== null && typeof parsed === 'object') {
+    const obj = parsed as Record<string, unknown>;
+    if ('v' in obj && obj.v !== 1) {
+      throw new SyncError('SCHEMA_VERSION_MISMATCH', `Unsupported signal version: ${String(obj.v)}`);
+    }
+  }
+
+  const result = SignalEnvelopeSchema.safeParse(parsed);
+  if (!result.success) {
+    throw new SyncError('SCHEMA_INVALID', result.error.message);
+  }
+  return result.data;
 }
