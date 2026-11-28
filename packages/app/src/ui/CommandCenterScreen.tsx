@@ -43,6 +43,7 @@ interface CommandCenterScreenProps {
   lang: AppLanguage;
   onChangeLang: (lang: AppLanguage) => void;
   officerId: string;
+  isOnline: boolean;
   onLogout: () => void;
   items: ItemViewModel[];
   distributionEntries: ReadonlyArray<{ tag: Tag; el: DistributionEntry }>;
@@ -73,6 +74,7 @@ export function CommandCenterScreen({
   lang,
   onChangeLang,
   officerId,
+  isOnline,
   onLogout,
   items,
   distributionEntries,
@@ -168,8 +170,33 @@ export function CommandCenterScreen({
     );
   }, [items, query]);
 
-  const postDetails = useMemo(
-    () => ({
+  const postDetails = useMemo(() => {
+    const computePostAdjustment = (postTag: string) => {
+      const upperTag = postTag.toUpperCase();
+      const deltas: Record<string, number> = {};
+      for (const { el } of distributionEntries) {
+        const hay = `${el.counterparty ?? ''} ${el.reason ?? ''} ${el.note ?? ''}`.toUpperCase();
+        if (!hay.includes(upperTag) && !hay.includes(upperTag.replace('-', ' '))) continue;
+        const sign = el.kind === 'receive' ? 1 : -1;
+        deltas[el.itemId] = (deltas[el.itemId] ?? 0) + sign * el.qty;
+      }
+      return deltas;
+    };
+
+    const c02Deltas = computePostAdjustment('POSKO-C02');
+    const c02Sembako = Math.max(0, 64 + (c02Deltas['sembako'] ?? 0));
+    const c02Air = Math.max(0, 110 + (c02Deltas['air-19l'] ?? 0));
+    const c02Trauma = Math.max(0, 45 + (c02Deltas['trauma-kit'] ?? 0));
+    const c02SembakoRights = Math.min(80, Math.max(0, 10 + (c02Deltas['sembako'] ?? 0)));
+    const c02Pct = Math.round((c02SembakoRights / 80) * 1000) / 10;
+    const c02Critical = c02Pct <= 15;
+
+    const b07Deltas = computePostAdjustment('POSKO-B07');
+    const b07Sembako = Math.max(0, 540 + (b07Deltas['sembako'] ?? 0));
+    const b07Air = Math.max(0, 820 + (b07Deltas['air-19l'] ?? 0));
+    const b07Trauma = Math.max(0, 92 + (b07Deltas['trauma-kit'] ?? 0));
+
+    return {
       'posko-a04': {
         id: 'posko-a04' as const,
         name: 'Posko A-04',
@@ -206,12 +233,32 @@ export function CommandCenterScreen({
         id: 'posko-c02' as const,
         name: 'Posko C-02',
         sector: lang === 'en' ? 'West Slope' : 'Lereng Barat',
-        critical: true,
-        statusLabel: `12.5% ${lang === 'en' ? 'Critical' : 'Kritis'}`,
+        critical: c02Critical,
+        statusLabel: `${c02Pct.toFixed(1)}% ${
+          c02Critical
+            ? lang === 'en'
+              ? 'Critical'
+              : 'Kritis'
+            : lang === 'en'
+              ? 'Safe'
+              : 'Aman'
+        }`,
         commodities: [
-          { name: 'Paket Sembako', stock: '64 Koli', rights: '10 / 80' },
-          { name: 'Air Bersih 19L', stock: '110 Unit', rights: '25 / 150' },
-          { name: 'Obat Trauma Kit B', stock: '9 Set', rights: '4 / 30' },
+          {
+            name: 'Paket Sembako',
+            stock: `${c02Sembako} Koli`,
+            rights: `${c02SembakoRights} / 80`,
+          },
+          {
+            name: 'Air Bersih 19L',
+            stock: `${c02Air} Unit`,
+            rights: `${Math.min(150, Math.max(0, 25 + (c02Deltas['air-19l'] ?? 0)))} / 150`,
+          },
+          {
+            name: 'Obat Trauma Kit B',
+            stock: `${c02Trauma} Set`,
+            rights: `${Math.min(50, Math.max(0, 45 + (c02Deltas['trauma-kit'] ?? 0)))} / 50`,
+          },
         ],
       },
       'posko-b07': {
@@ -221,14 +268,13 @@ export function CommandCenterScreen({
         critical: false,
         statusLabel: '185% Surplus',
         commodities: [
-          { name: 'Paket Sembako', stock: '540 Koli', rights: '200 / 200' },
-          { name: 'Air Bersih 19L', stock: '820 Unit', rights: '400 / 400' },
-          { name: 'Obat Trauma Kit B', stock: '92 Set', rights: '60 / 60' },
+          { name: 'Paket Sembako', stock: `${b07Sembako} Koli`, rights: '200 / 200' },
+          { name: 'Air Bersih 19L', stock: `${b07Air} Unit`, rights: '400 / 400' },
+          { name: 'Obat Trauma Kit B', stock: `${b07Trauma} Set`, rights: '60 / 60' },
         ],
       },
-    }),
-    [lang, poskoA04Critical, poskoA04Pct, sembako, airItem, traumaItem],
-  );
+    };
+  }, [lang, poskoA04Critical, poskoA04Pct, sembako, airItem, traumaItem, distributionEntries]);
 
   const selectedPost = selectedPostId ? postDetails[selectedPostId] : null;
 
@@ -364,6 +410,28 @@ export function CommandCenterScreen({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <div
+                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
+                  isOnline
+                    ? 'border-emerald-200 bg-emerald-50 text-[#059669]'
+                    : 'border-amber-200 bg-amber-50 text-[#B45309]'
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isOnline ? 'animate-pulse bg-[#059669]' : 'bg-[#B45309]'
+                  }`}
+                />
+                <span>
+                  {isOnline
+                    ? lang === 'en'
+                      ? 'Online Auto-Sync'
+                      : 'Online Auto-Sync'
+                    : lang === 'en'
+                      ? 'Offline (QR / Mesh)'
+                      : 'Offline (QR / Mesh)'}
+                </span>
+              </div>
               <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-[#059669]" />
                 <span>

@@ -156,9 +156,17 @@ export function InventarisScreen({
     if (!selectedItem) return;
     setInsufficientRightsPrompt(false);
     if (flow === 'receive') {
-      await onReceive(selectedItem.id, qty);
+      await onReceive(
+        selectedItem.id,
+        qty,
+        `${officerId} • ${lang === 'en' ? 'Field Intake' : 'Penerimaan Posko'}`,
+      );
     } else {
-      const res = await onIssue(selectedItem.id, qty);
+      const res = await onIssue(
+        selectedItem.id,
+        qty,
+        `${officerId} • ${lang === 'en' ? 'Field Team' : 'Tim Penyalur'}`,
+      );
       if (!res.ok && qty > selectedItem.localRights) {
         setInsufficientRightsPrompt(true);
       }
@@ -176,7 +184,11 @@ export function InventarisScreen({
       return;
     }
     setOverrideError(null);
-    const res = await onEmergencyIssue(selectedItem.id, qty, overrideReason.trim());
+    const res = await onEmergencyIssue(
+      selectedItem.id,
+      qty,
+      `[${officerId}] ${overrideReason.trim()}`,
+    );
     if (res.ok) {
       setOverrideReason('');
       setOverrideOpen(false);
@@ -188,7 +200,12 @@ export function InventarisScreen({
     if (!selectedItem) return;
     const match = manualCode.match(/(\d+)/);
     const parsedQty = match ? Math.max(1, Number.parseInt(match[1] ?? '1', 10)) : qty;
-    await onReceive(selectedItem.id, parsedQty, manualDonor.trim() || 'Manual Code', `Code: ${manualCode}`);
+    await onReceive(
+      selectedItem.id,
+      parsedQty,
+      `${officerId} • ${manualDonor.trim() || 'Manual Code'}`,
+      `Code: ${manualCode}`,
+    );
     setManualOpen(false);
   }
 

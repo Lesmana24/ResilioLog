@@ -65,6 +65,7 @@ function ResilioShell() {
     dbReady,
     activeNodeParam,
     persistenceGranted,
+    isOnline,
     replica,
     itemsList,
     distributionEntries,
@@ -144,6 +145,7 @@ function ResilioShell() {
           lang={lang}
           onChangeLang={setLang}
           officerId={session.officerId}
+          isOnline={isOnline}
           onLogout={handleLogout}
           items={itemsList}
           distributionEntries={distributionEntries}

@@ -58,6 +58,7 @@ import {
   type PeerCursorRow,
   type ReplicaRow,
 } from '../storage/db';
+import { publishOnlineEnvelope, subscribeOnlineEnvelopes } from './onlineRelay';
 
 interface MeshMessage {
   kind: 'envelope' | 'ping';
@@ -106,10 +107,14 @@ export function useReplica(lang: AppLanguage) {
   const [toast, setToast] = useState<ToastNotice | null>(null);
   const [nearbyPeers, setNearbyPeers] = useState<Record<string, string>>({});
   const [qrProgress, setQrProgress] = useState<ChunkProgress | null>(null);
+  const [isOnline, setIsOnline] = useState<boolean>(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : false,
+  );
 
   const channelRef = useRef<BroadcastChannel | null>(null);
   const collectorRef = useRef<ChunkCollector>(new ChunkCollector());
   const replicaRef = useRef<Replica | null>(null);
+  const lastOnlineBlobRef = useRef<string>('');
   const langRef = useRef<AppLanguage>(lang);
   langRef.current = lang;
 
@@ -328,6 +333,48 @@ export function useReplica(lang: AppLanguage) {
     };
   }, [dbReady, replica?.nodeId, mergeEncodedEnvelope, pushToast]);
 
+  // Track browser online/offline state and auto-sync when connected
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => {
+      setIsOnline(true);
+      const current = replicaRef.current;
+      if (current) {
+        const blob = encodeEnvelope(buildEnvelope(current, 0, 'full'));
+        void publishOnlineEnvelope(current.nodeId, ACTIVE_NODE_PARAM, blob);
+      }
+    };
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Subscribe to online CRDT relay while internet is available
+  useEffect(() => {
+    if (!dbReady || !replica?.nodeId || !isOnline) return;
+    const unsubscribe = subscribeOnlineEnvelopes(replica.nodeId, async (msg) => {
+      if (msg.blob === lastOnlineBlobRef.current) return;
+      lastOnlineBlobRef.current = msg.blob;
+      const res = await mergeEncodedEnvelope(msg.blob, `online:${msg.fromNodeParam}`);
+      if (res.ok) {
+        const l = langRef.current;
+        pushToast(
+          'success',
+          l === 'en' ? 'Online CRDT Synced' : 'CRDT Tersinkron Online',
+          l === 'en'
+            ? `Converged update from ${msg.fromNodeParam} (${msg.fromNodeId}).`
+            : `Update digabungkan dari ${msg.fromNodeParam} (${msg.fromNodeId}).`,
+        );
+      }
+    });
+    return unsubscribe;
+  }, [dbReady, replica?.nodeId, isOnline, mergeEncodedEnvelope, pushToast]);
+
   const commitOperation = useCallback(
     async (
       result: Result<Replica, AnyEngineErrorCode>,
@@ -345,6 +392,24 @@ export function useReplica(lang: AppLanguage) {
       }
       await saveReplicaAtomic(result.value);
       replicaRef.current = result.value;
+
+      // Auto-sync via BroadcastChannel + Online Relay (when internet is available)
+      try {
+        const env = buildEnvelope(result.value, 0, 'full');
+        const blob = encodeEnvelope(env);
+        channelRef.current?.postMessage({
+          kind: 'envelope',
+          fromNodeParam: ACTIVE_NODE_PARAM,
+          fromNodeId: result.value.nodeId,
+          blob,
+        } satisfies MeshMessage);
+        if (typeof navigator !== 'undefined' && navigator.onLine) {
+          void publishOnlineEnvelope(result.value.nodeId, ACTIVE_NODE_PARAM, blob);
+        }
+      } catch {
+        // Never block local offline write if sync broadcast fails
+      }
+
       pushToast(tone, successTitle, successDetail);
       return result;
     },
@@ -510,19 +575,21 @@ export function useReplica(lang: AppLanguage) {
       blob,
     } satisfies MeshMessage);
 
+    const onlineSent = await publishOnlineEnvelope(current.nodeId, ACTIVE_NODE_PARAM, blob);
+
     await db.cursors.put({
       peerId: 'mesh-broadcast',
       until: current.clock,
       lastSyncAt: new Date().toISOString(),
-      label: 'BroadcastChannel',
+      label: onlineSent ? 'Online + Mesh' : 'BroadcastChannel',
     });
 
     pushToast(
       'success',
       langRef.current === 'en' ? 'Mesh Delta Broadcasted' : 'Delta Mesh Dikirim',
       langRef.current === 'en'
-        ? `Sent ${blob.length} chars (CRC ${env.crc32}) to open tabs.`
-        : `Mengirim ${blob.length} karakter (CRC ${env.crc32}) ke tab terbuka.`,
+        ? `Sent ${blob.length} chars (CRC ${env.crc32})${onlineSent ? ' via Online Relay & local tabs' : ' to open tabs'}.`
+        : `Mengirim ${blob.length} karakter (CRC ${env.crc32})${onlineSent ? ' via Relay Online & tab lokal' : ' ke tab terbuka'}.`,
     );
   }, [pushToast]);
 
@@ -772,6 +839,7 @@ export function useReplica(lang: AppLanguage) {
     dbReady,
     activeNodeParam: ACTIVE_NODE_PARAM,
     persistenceGranted,
+    isOnline,
     replica,
     itemsList,
     distributionEntries,
