@@ -108,6 +108,10 @@ export const COPY: Record<
     confirmStopDeliverBtn: string;
     stopsLabel: string;
     itemsLineLabel: string;
+    installAppBtn: string;
+    appInstalledBadge: string;
+    installIosHint: string;
+    installManualHint: string;
   }
 > = {
   en: {
@@ -217,6 +221,11 @@ export const COPY: Record<
     confirmStopDeliverBtn: 'Confirm Arrival & Handover QR',
     stopsLabel: 'post(s)',
     itemsLineLabel: 'item(s)',
+    installAppBtn: 'Install App (Add to Home Screen)',
+    appInstalledBadge: 'Installed as App',
+    installIosHint: 'On iPhone/iPad: tap Share, then "Add to Home Screen".',
+    installManualHint:
+      'Open browser menu (⋮) and choose "Install app" or "Add to Home Screen".',
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
@@ -325,5 +334,10 @@ export const COPY: Record<
     confirmStopDeliverBtn: 'Tiba & Serahkan (QR)',
     stopsLabel: 'posko',
     itemsLineLabel: 'jenis',
+    installAppBtn: 'Pasang Aplikasi (Add to Home Screen)',
+    appInstalledBadge: 'Terpasang sebagai Aplikasi',
+    installIosHint: 'Di iPhone/iPad: ketuk Share, lalu pilih "Add to Home Screen".',
+    installManualHint:
+      'Buka menu browser (⋮) lalu pilih "Install app" atau "Tambahkan ke layar utama".',
   },
 };

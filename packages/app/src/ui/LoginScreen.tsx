@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import {
   ArrowRight,
   Database,
+  Download,
   Lock,
   MapPin,
   Monitor,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { AppLanguage } from '../engine/errorMessages';
 import { COPY } from '../i18n/translations';
+import { usePwaInstall } from '../state/usePwaInstall';
 
 export type EntityRole = 'volunteer' | 'courier' | 'command';
 
@@ -35,6 +37,19 @@ export function LoginScreen({
   const t = COPY[lang];
   const [officerId, setOfficerId] = useState('POSKO-A04');
   const [pin, setPin] = useState('');
+  const [showInstallHint, setShowInstallHint] = useState(false);
+  const { canInstall, isInstalled, isIos, promptInstall } = usePwaInstall();
+
+  async function handleInstallClick() {
+    if (canInstall) {
+      const outcome = await promptInstall();
+      if (outcome === 'unavailable') {
+        setShowInstallHint(true);
+      }
+      return;
+    }
+    setShowInstallHint((v) => !v);
+  }
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -254,23 +269,47 @@ export function LoginScreen({
           </div>
         </div>
 
-        {/* Subtle Offline Storage Footer */}
-        <div className="mt-4 flex items-center justify-center">
-          {persistenceGranted === true ? (
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-[#059669]">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              <span>{t.storagePersistent}</span>
-            </div>
-          ) : persistenceGranted === false ? (
-            <button
-              type="button"
-              onClick={onRequestPersistence}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-[#B45309] transition-colors hover:bg-amber-100"
-            >
-              <Database className="h-3.5 w-3.5" />
-              <span>{t.enablePersistentStorage}</span>
-            </button>
-          ) : null}
+        {/* Subtle Offline Storage & PWA Install Footer */}
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {persistenceGranted === true ? (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-[#059669]">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>{t.storagePersistent}</span>
+              </div>
+            ) : persistenceGranted === false ? (
+              <button
+                type="button"
+                onClick={onRequestPersistence}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-[#B45309] transition-colors hover:bg-amber-100"
+              >
+                <Database className="h-3.5 w-3.5" />
+                <span>{t.enablePersistentStorage}</span>
+              </button>
+            ) : null}
+
+            {isInstalled ? (
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-[#0F172A]">
+                <Smartphone className="h-3.5 w-3.5 text-[#059669]" />
+                <span>{t.appInstalledBadge}</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleInstallClick}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-300 bg-white px-3 py-1 text-[11px] font-semibold text-[#0F172A] shadow-2xs transition-colors hover:bg-slate-100"
+              >
+                <Download className="h-3.5 w-3.5" />
+                <span>{t.installAppBtn}</span>
+              </button>
+            )}
+          </div>
+
+          {showInstallHint && !isInstalled && (
+            <p className="max-w-sm rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-[11px] text-slate-600 shadow-2xs">
+              {isIos ? t.installIosHint : t.installManualHint}
+            </p>
+          )}
         </div>
       </div>
     </div>

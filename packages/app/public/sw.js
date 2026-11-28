@@ -1,5 +1,12 @@
-const CACHE_NAME = 'resiliolog-shell-v1';
-const PRECACHE_URLS = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+const CACHE_NAME = 'resiliolog-shell-v2';
+const PRECACHE_URLS = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
