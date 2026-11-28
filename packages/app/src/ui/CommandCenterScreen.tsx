@@ -33,6 +33,7 @@ import type { ItemViewModel } from '../state/useReplica';
 import {
   encodeCourierDispatchQr,
   type CourierDispatch,
+  type DispatchLineItem,
   type PeerCursorRow,
 } from '../storage/db';
 
@@ -53,11 +54,8 @@ interface CommandCenterScreenProps {
   onApproveReroute: (itemId: ItemId, qty: number, topUpTag?: Tag) => Promise<unknown>;
   onRatifyOverride: (overrideId: string) => Promise<void>;
   onCreateCourierDispatch: (input: {
-    toPost: string;
     courierId: string;
-    itemId: ItemId;
-    qty: number;
-    note?: string;
+    stops: Array<{ toPost: string; items: DispatchLineItem[]; note?: string }>;
   }) => Promise<{ dispatch: CourierDispatch; qrText: string }>;
   onExportLog: () => void;
   onSyncNow: () => Promise<void>;
@@ -100,6 +98,9 @@ export function CommandCenterScreen({
   const [dispatchItemId, setDispatchItemId] = useState<ItemId>('sembako');
   const [dispatchQty, setDispatchQty] = useState(50);
   const [dispatchNote, setDispatchNote] = useState('');
+  const [draftStops, setDraftStops] = useState<
+    Array<{ toPost: string; items: DispatchLineItem[]; note?: string }>
+  >([]);
   const [activeDispatchQr, setActiveDispatchQr] = useState<{
     dispatch: CourierDispatch;
     qrText: string;
@@ -1413,25 +1414,137 @@ export function CommandCenterScreen({
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const created = await onCreateCourierDispatch({
-                        toPost: dispatchDest,
-                        courierId: dispatchCourier,
-                        itemId: dispatchItemId,
-                        qty: dispatchQty,
-                        ...(dispatchNote.trim() ? { note: dispatchNote.trim() } : {}),
-                      });
-                      setActiveDispatchQr(created);
-                      setDispatchNote('');
-                    }}
-                    className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#0F172A] px-4 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    <span>{t.dispatchAssignBtn}</span>
-                  </button>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const qty = Math.max(1, dispatchQty);
+                        const trimmedNote = dispatchNote.trim();
+                        setDraftStops((prev) => {
+                          const idx = prev.findIndex((s) => s.toPost === dispatchDest);
+                          if (idx === -1) {
+                            return [
+                              ...prev,
+                              {
+                                toPost: dispatchDest,
+                                items: [{ itemId: dispatchItemId, qty }],
+                                ...(trimmedNote ? { note: trimmedNote } : {}),
+                              },
+                            ];
+                          }
+                          return prev.map((s, i) => {
+                            if (i !== idx) return s;
+                            const existingItem = s.items.find((it) => it.itemId === dispatchItemId);
+                            const nextItems = existingItem
+                              ? s.items.map((it) =>
+                                  it.itemId === dispatchItemId ? { ...it, qty: it.qty + qty } : it,
+                                )
+                              : [...s.items, { itemId: dispatchItemId, qty }];
+                            return {
+                              ...s,
+                              items: nextItems,
+                              ...(trimmedNote ? { note: trimmedNote } : {}),
+                            };
+                          });
+                        });
+                        setDispatchNote('');
+                      }}
+                      className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 text-xs font-bold text-[#0F172A] shadow-xs hover:bg-slate-50"
+                    >
+                      <span>{t.addToManifestBtn}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const trimmedNote = dispatchNote.trim();
+                        const stopsToSubmit =
+                          draftStops.length > 0
+                            ? draftStops
+                            : [
+                                {
+                                  toPost: dispatchDest,
+                                  items: [{ itemId: dispatchItemId, qty: Math.max(1, dispatchQty) }],
+                                  ...(trimmedNote ? { note: trimmedNote } : {}),
+                                },
+                              ];
+                        const created = await onCreateCourierDispatch({
+                          courierId: dispatchCourier,
+                          stops: stopsToSubmit,
+                        });
+                        setActiveDispatchQr(created);
+                        setDraftStops([]);
+                        setDispatchNote('');
+                      }}
+                      className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#0F172A] px-4 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
+                    >
+                      <QrCode className="h-4 w-4" />
+                      <span>{t.dispatchAssignBtn}</span>
+                    </button>
+                  </div>
                 </div>
+
+                {draftStops.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+                    <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#0F172A]">
+                      <span>
+                        {t.draftManifestTitle} ({draftStops.length} {t.stopsLabel})
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDraftStops([])}
+                        className="cursor-pointer text-[11px] font-semibold text-slate-500 hover:text-red-600"
+                      >
+                        {lang === 'en' ? 'Clear' : 'Kosongkan'}
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      {draftStops.map((stop) => (
+                        <div
+                          key={stop.toPost}
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs"
+                        >
+                          <div className="font-bold text-[#0F172A]">
+                            {stop.toPost}
+                            {stop.note ? (
+                              <span className="ml-2 font-normal text-slate-500">— {stop.note}</span>
+                            ) : null}
+                          </div>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {stop.items.map((it) => (
+                              <span
+                                key={it.itemId}
+                                className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-[#0F172A]"
+                              >
+                                +{it.qty} {itemNamesById[it.itemId]?.name ?? it.itemId}
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDraftStops((prev) =>
+                                      prev
+                                        .map((s) =>
+                                          s.toPost === stop.toPost
+                                            ? {
+                                                ...s,
+                                                items: s.items.filter((x) => x.itemId !== it.itemId),
+                                              }
+                                            : s,
+                                        )
+                                        .filter((s) => s.items.length > 0),
+                                    )
+                                  }
+                                  className="cursor-pointer rounded-full p-0.5 text-slate-400 hover:bg-slate-200 hover:text-red-600"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {activeDispatchQr && (
                   <div className="flex flex-col items-center gap-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 md:flex-row">
@@ -1452,11 +1565,19 @@ export function CommandCenterScreen({
                         </button>
                       </div>
                       <p className="text-xs text-slate-600">{t.dispatchQrModalSub}</p>
-                      <div className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-[#0F172A]">
-                        {activeDispatchQr.dispatch.courierId} →{' '}
-                        {activeDispatchQr.dispatch.toPost} • +{activeDispatchQr.dispatch.qty}{' '}
-                        {itemNamesById[activeDispatchQr.dispatch.itemId]?.name ??
-                          activeDispatchQr.dispatch.itemId}
+                      <div className="space-y-1 rounded-lg bg-white px-3 py-2 text-xs text-[#0F172A]">
+                        <div className="font-bold">
+                          {activeDispatchQr.dispatch.courierId} ({activeDispatchQr.dispatch.stops.length}{' '}
+                          {t.stopsLabel})
+                        </div>
+                        {activeDispatchQr.dispatch.stops.map((s) => (
+                          <div key={s.id} className="text-[11px] text-slate-700">
+                            → <strong>{s.toPost}</strong>:{' '}
+                            {s.items
+                              .map((it) => `+${it.qty} ${itemNamesById[it.itemId]?.name ?? it.itemId}`)
+                              .join(', ')}
+                          </div>
+                        ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <button
@@ -1485,11 +1606,25 @@ export function CommandCenterScreen({
                           key={d.id}
                           className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs"
                         >
-                          <div>
-                            <span className="font-mono font-bold text-[#0F172A]">{d.id}</span> •{' '}
-                            <span className="font-semibold">{d.courierId}</span> →{' '}
-                            <span className="font-semibold">{d.toPost}</span> (+{d.qty}{' '}
-                            {itemNamesById[d.itemId]?.name ?? d.itemId})
+                          <div className="min-w-0 flex-1">
+                            <div>
+                              <span className="font-mono font-bold text-[#0F172A]">{d.id}</span> •{' '}
+                              <span className="font-semibold">{d.courierId}</span> ({d.stops.length}{' '}
+                              {t.stopsLabel})
+                            </div>
+                            <div className="mt-0.5 text-[11px] text-slate-600">
+                              {d.stops
+                                .map(
+                                  (s) =>
+                                    `${s.toPost} (${s.items
+                                      .map(
+                                        (it) =>
+                                          `+${it.qty} ${itemNamesById[it.itemId]?.name ?? it.itemId}`,
+                                      )
+                                      .join(', ')})`,
+                                )
+                                .join(' • ')}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <span

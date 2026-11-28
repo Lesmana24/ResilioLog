@@ -347,14 +347,25 @@ export async function addRatifiedOverride(id: string): Promise<string[]> {
   return next;
 }
 
+export interface DispatchLineItem {
+  itemId: ItemId;
+  qty: number;
+}
+
+export interface DispatchStop {
+  id: string;
+  toPost: string;
+  items: DispatchLineItem[];
+  note?: string;
+  status: 'pending' | 'delivered';
+  deliveredAt?: string;
+}
+
 export interface CourierDispatch {
   id: string;
   from: string;
-  toPost: string;
   courierId: string;
-  itemId: ItemId;
-  qty: number;
-  note?: string;
+  stops: DispatchStop[];
   createdAt: string;
   status: 'assigned' | 'in_transit' | 'delivered';
   deliveredAt?: string;
@@ -362,15 +373,102 @@ export interface CourierDispatch {
 
 export const DISPATCH_QR_PREFIX = 'RLD1:';
 
+export function normalizeCourierDispatch(raw: unknown): CourierDispatch | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const obj = raw as Record<string, unknown>;
+  if (typeof obj['id'] !== 'string' || typeof obj['courierId'] !== 'string') return null;
+
+  const from = typeof obj['from'] === 'string' ? obj['from'] : 'CMD-ALFA7';
+  const createdAt =
+    typeof obj['createdAt'] === 'string' ? obj['createdAt'] : new Date().toISOString();
+  const status: CourierDispatch['status'] =
+    obj['status'] === 'delivered' || obj['status'] === 'in_transit' || obj['status'] === 'assigned'
+      ? obj['status']
+      : 'in_transit';
+
+  let stops: DispatchStop[] = [];
+  if (Array.isArray(obj['stops'])) {
+    stops = obj['stops']
+      .map((s, idx): DispatchStop | null => {
+        if (!s || typeof s !== 'object') return null;
+        const so = s as Record<string, unknown>;
+        if (typeof so['toPost'] !== 'string' || !Array.isArray(so['items'])) return null;
+        const items: DispatchLineItem[] = so['items']
+          .map((li): DispatchLineItem | null => {
+            if (!li || typeof li !== 'object') return null;
+            const lo = li as Record<string, unknown>;
+            if (
+              typeof lo['itemId'] === 'string' &&
+              typeof lo['qty'] === 'number' &&
+              Number.isInteger(lo['qty']) &&
+              lo['qty'] > 0
+            ) {
+              return { itemId: lo['itemId'], qty: lo['qty'] };
+            }
+            return null;
+          })
+          .filter((x): x is DispatchLineItem => x !== null);
+        if (items.length === 0) return null;
+        const stopStatus: DispatchStop['status'] =
+          so['status'] === 'delivered' ? 'delivered' : 'pending';
+        return {
+          id: typeof so['id'] === 'string' ? so['id'] : `STOP-${idx + 1}`,
+          toPost: so['toPost'],
+          items,
+          ...(typeof so['note'] === 'string' && so['note'].trim()
+            ? { note: so['note'].trim() }
+            : {}),
+          status: stopStatus,
+          ...(typeof so['deliveredAt'] === 'string' ? { deliveredAt: so['deliveredAt'] } : {}),
+        };
+      })
+      .filter((x): x is DispatchStop => x !== null);
+  } else if (
+    typeof obj['toPost'] === 'string' &&
+    typeof obj['itemId'] === 'string' &&
+    typeof obj['qty'] === 'number' &&
+    Number.isInteger(obj['qty']) &&
+    obj['qty'] > 0
+  ) {
+    // Legacy single-stop format compatibility
+    stops = [
+      {
+        id: 'STOP-1',
+        toPost: obj['toPost'],
+        items: [{ itemId: obj['itemId'], qty: obj['qty'] }],
+        ...(typeof obj['note'] === 'string' && obj['note'].trim()
+          ? { note: obj['note'].trim() }
+          : {}),
+        status: status === 'delivered' ? 'delivered' : 'pending',
+        ...(typeof obj['deliveredAt'] === 'string' ? { deliveredAt: obj['deliveredAt'] } : {}),
+      },
+    ];
+  }
+
+  if (stops.length === 0) return null;
+
+  return {
+    id: obj['id'],
+    from,
+    courierId: obj['courierId'],
+    stops,
+    createdAt,
+    status,
+    ...(typeof obj['deliveredAt'] === 'string' ? { deliveredAt: obj['deliveredAt'] } : {}),
+  };
+}
+
 export function encodeCourierDispatchQr(dispatch: CourierDispatch): string {
   const compact = {
     id: dispatch.id,
     from: dispatch.from,
-    toPost: dispatch.toPost,
     courierId: dispatch.courierId,
-    itemId: dispatch.itemId,
-    qty: dispatch.qty,
-    ...(dispatch.note ? { note: dispatch.note } : {}),
+    stops: dispatch.stops.map((s) => ({
+      id: s.id,
+      toPost: s.toPost,
+      items: s.items,
+      ...(s.note ? { note: s.note } : {}),
+    })),
     createdAt: dispatch.createdAt,
   };
   return `${DISPATCH_QR_PREFIX}${JSON.stringify(compact)}`;
@@ -380,29 +478,14 @@ export function decodeCourierDispatchQr(raw: string): CourierDispatch | null {
   const trimmed = raw.trim();
   if (!trimmed.startsWith(DISPATCH_QR_PREFIX)) return null;
   try {
-    const parsed = JSON.parse(trimmed.slice(DISPATCH_QR_PREFIX.length)) as Partial<CourierDispatch>;
-    if (
-      typeof parsed.id === 'string' &&
-      typeof parsed.toPost === 'string' &&
-      typeof parsed.courierId === 'string' &&
-      typeof parsed.itemId === 'string' &&
-      typeof parsed.qty === 'number' &&
-      Number.isInteger(parsed.qty) &&
-      parsed.qty > 0
-    ) {
-      return {
-        id: parsed.id,
-        from: typeof parsed.from === 'string' ? parsed.from : 'CMD-ALFA7',
-        toPost: parsed.toPost,
-        courierId: parsed.courierId,
-        itemId: parsed.itemId,
-        qty: parsed.qty,
-        ...(typeof parsed.note === 'string' && parsed.note.trim() ? { note: parsed.note.trim() } : {}),
-        createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
-        status: 'in_transit',
-      };
-    }
-    return null;
+    const parsed: unknown = JSON.parse(trimmed.slice(DISPATCH_QR_PREFIX.length));
+    const normalized = normalizeCourierDispatch(parsed);
+    if (!normalized) return null;
+    return {
+      ...normalized,
+      status: 'in_transit',
+      stops: normalized.stops.map((s) => ({ ...s, status: 'pending' as const })),
+    };
   } catch {
     return null;
   }
@@ -413,7 +496,10 @@ export async function getCourierDispatches(): Promise<CourierDispatch[]> {
   if (!row) return [];
   try {
     const parsed: unknown = JSON.parse(row.value);
-    return Array.isArray(parsed) ? (parsed as CourierDispatch[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((item) => normalizeCourierDispatch(item))
+      .filter((x): x is CourierDispatch => x !== null);
   } catch {
     return [];
   }
@@ -428,12 +514,25 @@ export async function upsertCourierDispatch(dispatch: CourierDispatch): Promise<
   return next;
 }
 
-export async function markCourierDispatchDelivered(id: string): Promise<CourierDispatch[]> {
+export async function markCourierDispatchStopDelivered(
+  dispatchId: string,
+  stopId: string,
+): Promise<CourierDispatch[]> {
   const prev = await getCourierDispatches();
   const now = new Date().toISOString();
-  const next = prev.map((d) =>
-    d.id === id ? { ...d, status: 'delivered' as const, deliveredAt: now } : d,
-  );
+  const next = prev.map((d) => {
+    if (d.id !== dispatchId) return d;
+    const nextStops = d.stops.map((s) =>
+      s.id === stopId ? { ...s, status: 'delivered' as const, deliveredAt: now } : s,
+    );
+    const allDelivered = nextStops.every((s) => s.status === 'delivered');
+    return {
+      ...d,
+      stops: nextStops,
+      status: allDelivered ? ('delivered' as const) : d.status,
+      ...(allDelivered ? { deliveredAt: now } : {}),
+    };
+  });
   await db.kv.put({ key: 'courierDispatches', value: JSON.stringify(next) });
   return next;
 }

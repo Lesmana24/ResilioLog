@@ -46,11 +46,14 @@ import {
   encodeCourierDispatchQr,
   ensureSeededReplica,
   getRatifiedOverrides,
-  markCourierDispatchDelivered,
+  markCourierDispatchStopDelivered,
+  normalizeCourierDispatch,
   requestPersistentStorage,
   saveReplicaAtomic,
   upsertCourierDispatch,
   type CourierDispatch,
+  type DispatchLineItem,
+  type DispatchStop,
   type KvRow,
   type PeerCursorRow,
   type ReplicaRow,
@@ -208,7 +211,10 @@ export function useReplica(lang: AppLanguage) {
     if (!dispatchRow) return [];
     try {
       const parsed: unknown = JSON.parse(dispatchRow.value);
-      return Array.isArray(parsed) ? (parsed as CourierDispatch[]) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((item) => normalizeCourierDispatch(item))
+        .filter((x): x is CourierDispatch => x !== null);
     } catch {
       return [];
     }
@@ -558,12 +564,13 @@ export function useReplica(lang: AppLanguage) {
         }
         await upsertCourierDispatch(parsed);
         const l = langRef.current;
+        const totalLines = parsed.stops.reduce((acc, s) => acc + s.items.length, 0);
         pushToast(
           'success',
           l === 'en' ? 'Dispatch Task Received' : 'Tugas Pengiriman Diterima',
           l === 'en'
-            ? `${parsed.id}: Deliver +${parsed.qty} ${parsed.itemId} → ${parsed.toPost}`
-            : `${parsed.id}: Antar +${parsed.qty} ${parsed.itemId} → ${parsed.toPost}`,
+            ? `${parsed.id}: ${parsed.stops.length} post(s), ${totalLines} item(s) loaded.`
+            : `${parsed.id}: ${parsed.stops.length} posko, ${totalLines} jenis logistik diterima.`,
         );
         return ok({ msgId: parsed.id, received: 1, total: 1, complete: true });
       }
@@ -637,57 +644,67 @@ export function useReplica(lang: AppLanguage) {
 
   const createCourierDispatch = useCallback(
     async (input: {
-      toPost: string;
       courierId: string;
-      itemId: ItemId;
-      qty: number;
-      note?: string;
+      stops: Array<{ toPost: string; items: DispatchLineItem[]; note?: string }>;
       from?: string;
     }): Promise<{ dispatch: CourierDispatch; qrText: string }> => {
+      const stops: DispatchStop[] = input.stops.map((s, idx) => ({
+        id: `STOP-${idx + 1}`,
+        toPost: s.toPost,
+        items: s.items.map((it) => ({
+          itemId: it.itemId,
+          qty: Math.max(1, Math.round(it.qty)),
+        })),
+        ...(s.note && s.note.trim() ? { note: s.note.trim() } : {}),
+        status: 'pending' as const,
+      }));
       const dispatch: CourierDispatch = {
         id: `DSP-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
         from: input.from ?? 'CMD-ALFA7',
-        toPost: input.toPost,
         courierId: input.courierId,
-        itemId: input.itemId,
-        qty: Math.max(1, Math.round(input.qty)),
-        ...(input.note && input.note.trim() ? { note: input.note.trim() } : {}),
+        stops,
         createdAt: formatNowIso(),
         status: 'assigned',
       };
       await upsertCourierDispatch(dispatch);
+      const totalLines = stops.reduce((acc, s) => acc + s.items.length, 0);
       const l = langRef.current;
       pushToast(
         'success',
         l === 'en' ? 'Dispatch Assigned' : 'Tugas Kurir Dibuat',
         l === 'en'
-          ? `${dispatch.id} for ${dispatch.courierId} → ${dispatch.toPost}`
-          : `${dispatch.id} untuk ${dispatch.courierId} → ${dispatch.toPost}`,
+          ? `${dispatch.id} for ${dispatch.courierId}: ${stops.length} post(s), ${totalLines} item(s).`
+          : `${dispatch.id} untuk ${dispatch.courierId}: ${stops.length} posko, ${totalLines} jenis.`,
       );
       return { dispatch, qrText: encodeCourierDispatchQr(dispatch) };
     },
     [pushToast],
   );
 
-  const completeCourierDispatch = useCallback(
-    async (dispatchId: string, courierOfficerId: string): Promise<boolean> => {
-      const target = courierDispatches.find((d) => d.id === dispatchId);
-      if (!target || target.status === 'delivered') return false;
-      const res = await doReceive(
-        target.itemId,
-        target.qty,
-        `${courierOfficerId} → ${target.toPost}`,
-        `${target.id}${target.note ? `: ${target.note}` : ''}`,
-      );
-      if (!res.ok) return false;
-      await markCourierDispatchDelivered(dispatchId);
+  const completeCourierDispatchStop = useCallback(
+    async (dispatchId: string, stopId: string, courierOfficerId: string): Promise<boolean> => {
+      const dispatch = courierDispatches.find((d) => d.id === dispatchId);
+      const stop = dispatch?.stops.find((s) => s.id === stopId);
+      if (!dispatch || !stop || stop.status === 'delivered') return false;
+
+      for (const line of stop.items) {
+        const res = await doReceive(
+          line.itemId,
+          line.qty,
+          `${courierOfficerId} → ${stop.toPost}`,
+          `${dispatch.id}/${stop.id}${stop.note ? `: ${stop.note}` : ''}`,
+        );
+        if (!res.ok) return false;
+      }
+
+      await markCourierDispatchStopDelivered(dispatchId, stopId);
       const l = langRef.current;
       pushToast(
         'success',
         l === 'en' ? 'Handover QR Ready' : 'QR Serah Terima Siap',
         l === 'en'
-          ? `Recorded +${target.qty} ${target.itemId} in CRDT. Show Relay QR to ${target.toPost} to sync.`
-          : `+${target.qty} ${target.itemId} tercatat di CRDT. Tunjukkan QR Relay ke ${target.toPost} untuk sinkron.`,
+          ? `Recorded ${stop.items.length} item(s) for ${stop.toPost} in CRDT. Show Relay QR to sync.`
+          : `${stop.items.length} jenis logistik untuk ${stop.toPost} tercatat di CRDT. Tunjukkan QR Relay.`,
       );
       return true;
     },
@@ -780,7 +797,7 @@ export function useReplica(lang: AppLanguage) {
     importQrFrame,
     simulateCourierArrival,
     createCourierDispatch,
-    completeCourierDispatch,
+    completeCourierDispatchStop,
     exportLogJson,
   };
 }

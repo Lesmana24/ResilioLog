@@ -103,6 +103,11 @@ export const COPY: Record<
     deliveredBadge: string;
     inTransitBadge: string;
     assignedBadge: string;
+    addToManifestBtn: string;
+    draftManifestTitle: string;
+    confirmStopDeliverBtn: string;
+    stopsLabel: string;
+    itemsLineLabel: string;
   }
 > = {
   en: {
@@ -207,6 +212,11 @@ export const COPY: Record<
     deliveredBadge: 'Delivered',
     inTransitBadge: 'In Transit',
     assignedBadge: 'Assigned',
+    addToManifestBtn: '+ Add to Manifest',
+    draftManifestTitle: 'Draft Delivery Manifest',
+    confirmStopDeliverBtn: 'Confirm Arrival & Handover QR',
+    stopsLabel: 'post(s)',
+    itemsLineLabel: 'item(s)',
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
@@ -310,5 +320,10 @@ export const COPY: Record<
     deliveredBadge: 'Terkirim',
     inTransitBadge: 'Dalam Perjalanan',
     assignedBadge: 'Ditugaskan',
+    addToManifestBtn: '+ Tambah ke Muatan',
+    draftManifestTitle: 'Daftar Muatan Pengiriman',
+    confirmStopDeliverBtn: 'Tiba & Serahkan (QR)',
+    stopsLabel: 'posko',
+    itemsLineLabel: 'jenis',
   },
 };

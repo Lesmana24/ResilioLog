@@ -90,7 +90,7 @@ function ResilioShell() {
     importQrFrame,
     simulateCourierArrival,
     createCourierDispatch,
-    completeCourierDispatch,
+    completeCourierDispatchStop,
     exportLogJson,
   } = useReplica(lang);
 
@@ -172,7 +172,7 @@ function ResilioShell() {
               qrProgress={qrProgress}
               getQrChunks={getQrChunks}
               onImportQrFrame={importQrFrame}
-              onCompleteDispatch={completeCourierDispatch}
+              onCompleteDispatchStop={completeCourierDispatchStop}
             />
           ) : mobileTab === 'sync' ? (
             <P2PSyncScreen
