@@ -21,7 +21,7 @@ import type { ChunkProgress } from '@resiliolog/sync';
 import type { AnyEngineErrorCode, AppLanguage } from '../engine/errorMessages';
 import { COPY } from '../i18n/translations';
 import type { ItemViewModel } from '../state/useReplica';
-import type { PeerCursorRow } from '../storage/db';
+import type { CourierDispatch, PeerCursorRow } from '../storage/db';
 import { QrScannerModal } from './QrScannerModal';
 
 type CourierTab = 'relay' | 'manifest';
@@ -34,9 +34,11 @@ interface CourierScreenProps {
   items: ItemViewModel[];
   distributionEntries: ReadonlyArray<{ tag: Tag; el: DistributionEntry }>;
   cursors: PeerCursorRow[];
+  courierDispatches: CourierDispatch[];
   qrProgress: ChunkProgress | null;
   getQrChunks: () => { chunks: string[]; msgId: string; crc32: string; totalChars: number };
   onImportQrFrame: (frameText: string) => Promise<Result<ChunkProgress, AnyEngineErrorCode>>;
+  onCompleteDispatch: (dispatchId: string, courierOfficerId: string) => Promise<boolean>;
 }
 
 function tileLabel(name: string, lang: AppLanguage): string {
@@ -68,9 +70,11 @@ export function CourierScreen({
   items,
   distributionEntries,
   cursors,
+  courierDispatches,
   qrProgress,
   getQrChunks,
   onImportQrFrame,
+  onCompleteDispatch,
 }: CourierScreenProps) {
   const t = COPY[lang];
   const [courierTab, setCourierTab] = useState<CourierTab>('relay');
@@ -108,6 +112,15 @@ export function CourierScreen({
     if (logFilter === 'all') return sorted;
     return sorted.filter(({ el }) => el.kind === logFilter);
   }, [distributionEntries, logFilter]);
+
+  const activeDispatches = useMemo(
+    () => courierDispatches.filter((d) => d.status !== 'delivered'),
+    [courierDispatches],
+  );
+  const deliveredDispatches = useMemo(
+    () => courierDispatches.filter((d) => d.status === 'delivered'),
+    [courierDispatches],
+  );
 
   async function handleImportSubmit() {
     if (!frameInput.trim()) return;
@@ -260,6 +273,60 @@ export function CourierScreen({
               </button>
             </section>
 
+            {/* Active Delivery Tasks from Command Center */}
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
+              <div className="mb-2.5 flex items-center justify-between">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {t.courierActiveTasksTitle} ({activeDispatches.length})
+                </h2>
+              </div>
+              {activeDispatches.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
+                  {t.courierNoTasksSub}
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {activeDispatches.map((task) => {
+                    const meta = itemMetaMap[task.itemId];
+                    return (
+                      <div
+                        key={task.id}
+                        className="rounded-xl border border-amber-200 bg-amber-50/50 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-xs font-bold text-[#0F172A]">
+                            {task.id} → {task.toPost}
+                          </span>
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-[#B45309]">
+                            {t.inTransitBadge}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-xs font-semibold text-[#0F172A]">
+                          +{task.qty} {meta?.unit ?? ''} {meta?.name ?? task.itemId}
+                        </div>
+                        {task.note && (
+                          <div className="mt-0.5 text-[11px] text-slate-600">{task.note}</div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const ok = await onCompleteDispatch(task.id, officerId);
+                            if (ok) {
+                              setQrPanelOpen(true);
+                            }
+                          }}
+                          className="mt-2.5 flex h-10 w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg bg-[#059669] px-3 text-xs font-bold text-white shadow-xs hover:bg-emerald-700"
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                          <span>{t.confirmDeliverBtn}</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
             {/* Chunked QR Progress Feedback */}
             {qrProgress && (
               <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-xs font-semibold text-emerald-900">
@@ -349,15 +416,15 @@ export function CourierScreen({
                 <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
                   <div className="text-[11px] font-semibold text-slate-500">
                     {lang === 'en'
-                      ? 'Manual QR Frame Paste (RL1:...)'
-                      : 'Tempel Frame QR Manual (RL1:...)'}
+                      ? 'Manual QR Paste (RL1:... or RLD1:...)'
+                      : 'Tempel QR Manual (RL1:... atau RLD1:...)'}
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={frameInput}
                       onChange={(e) => setFrameInput(e.target.value)}
-                      placeholder="RL1:msgId:0/2:crc:..."
+                      placeholder="RL1:... or RLD1:..."
                       className="h-10 min-w-0 flex-1 rounded-lg border border-slate-300 bg-slate-50 px-3 font-mono text-xs outline-none focus:border-[#0F172A] focus:bg-white"
                     />
                     <button
@@ -408,6 +475,40 @@ export function CourierScreen({
           </>
         ) : (
           <>
+            {/* Completed Deliveries */}
+            {deliveredDispatches.length > 0 && (
+              <section className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-xs">
+                <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {t.dispatchActiveListTitle} ({deliveredDispatches.length})
+                </h2>
+                <div className="space-y-2">
+                  {deliveredDispatches.map((d) => {
+                    const meta = itemMetaMap[d.itemId];
+                    return (
+                      <div
+                        key={d.id}
+                        className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/50 px-3 py-2 text-xs"
+                      >
+                        <div>
+                          <div className="font-bold text-[#0F172A]">
+                            {d.id} → {d.toPost} (+{d.qty} {meta?.name ?? d.itemId})
+                          </div>
+                          {d.deliveredAt && (
+                            <div className="text-[11px] text-slate-500">
+                              {formatEntryTime(d.deliveredAt, 0, lang)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-[#059669]">
+                          {t.deliveredBadge}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Synced Posts List */}
             <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
               <h2 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">

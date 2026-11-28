@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type {
   DistributionEntry,
+  ItemId,
   ItemState,
   NodeId,
   Replica,
@@ -343,5 +344,96 @@ export async function addRatifiedOverride(id: string): Promise<string[]> {
   if (prev.includes(id)) return prev;
   const next = [...prev, id];
   await db.kv.put({ key: 'ratifiedOverrides', value: JSON.stringify(next) });
+  return next;
+}
+
+export interface CourierDispatch {
+  id: string;
+  from: string;
+  toPost: string;
+  courierId: string;
+  itemId: ItemId;
+  qty: number;
+  note?: string;
+  createdAt: string;
+  status: 'assigned' | 'in_transit' | 'delivered';
+  deliveredAt?: string;
+}
+
+export const DISPATCH_QR_PREFIX = 'RLD1:';
+
+export function encodeCourierDispatchQr(dispatch: CourierDispatch): string {
+  const compact = {
+    id: dispatch.id,
+    from: dispatch.from,
+    toPost: dispatch.toPost,
+    courierId: dispatch.courierId,
+    itemId: dispatch.itemId,
+    qty: dispatch.qty,
+    ...(dispatch.note ? { note: dispatch.note } : {}),
+    createdAt: dispatch.createdAt,
+  };
+  return `${DISPATCH_QR_PREFIX}${JSON.stringify(compact)}`;
+}
+
+export function decodeCourierDispatchQr(raw: string): CourierDispatch | null {
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith(DISPATCH_QR_PREFIX)) return null;
+  try {
+    const parsed = JSON.parse(trimmed.slice(DISPATCH_QR_PREFIX.length)) as Partial<CourierDispatch>;
+    if (
+      typeof parsed.id === 'string' &&
+      typeof parsed.toPost === 'string' &&
+      typeof parsed.courierId === 'string' &&
+      typeof parsed.itemId === 'string' &&
+      typeof parsed.qty === 'number' &&
+      Number.isInteger(parsed.qty) &&
+      parsed.qty > 0
+    ) {
+      return {
+        id: parsed.id,
+        from: typeof parsed.from === 'string' ? parsed.from : 'CMD-ALFA7',
+        toPost: parsed.toPost,
+        courierId: parsed.courierId,
+        itemId: parsed.itemId,
+        qty: parsed.qty,
+        ...(typeof parsed.note === 'string' && parsed.note.trim() ? { note: parsed.note.trim() } : {}),
+        createdAt: typeof parsed.createdAt === 'string' ? parsed.createdAt : new Date().toISOString(),
+        status: 'in_transit',
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getCourierDispatches(): Promise<CourierDispatch[]> {
+  const row = await db.kv.get('courierDispatches');
+  if (!row) return [];
+  try {
+    const parsed: unknown = JSON.parse(row.value);
+    return Array.isArray(parsed) ? (parsed as CourierDispatch[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function upsertCourierDispatch(dispatch: CourierDispatch): Promise<CourierDispatch[]> {
+  const prev = await getCourierDispatches();
+  const idx = prev.findIndex((d) => d.id === dispatch.id);
+  const next =
+    idx >= 0 ? prev.map((d) => (d.id === dispatch.id ? dispatch : d)) : [dispatch, ...prev];
+  await db.kv.put({ key: 'courierDispatches', value: JSON.stringify(next) });
+  return next;
+}
+
+export async function markCourierDispatchDelivered(id: string): Promise<CourierDispatch[]> {
+  const prev = await getCourierDispatches();
+  const now = new Date().toISOString();
+  const next = prev.map((d) =>
+    d.id === id ? { ...d, status: 'delivered' as const, deliveredAt: now } : d,
+  );
+  await db.kv.put({ key: 'courierDispatches', value: JSON.stringify(next) });
   return next;
 }

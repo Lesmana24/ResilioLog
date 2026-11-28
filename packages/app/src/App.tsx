@@ -73,6 +73,7 @@ function ResilioShell() {
     nearbyPeers,
     unsyncedCount,
     ratifiedOverrides,
+    courierDispatches,
     qrProgress,
     toast,
     dismissToast,
@@ -88,6 +89,8 @@ function ResilioShell() {
     getQrChunks,
     importQrFrame,
     simulateCourierArrival,
+    createCourierDispatch,
+    completeCourierDispatch,
     exportLogJson,
   } = useReplica(lang);
 
@@ -147,8 +150,10 @@ function ResilioShell() {
           topUpRequests={topUpRequests}
           cursors={cursors}
           ratifiedOverrides={ratifiedOverrides}
+          courierDispatches={courierDispatches}
           onApproveReroute={doApproveReroute}
           onRatifyOverride={doRatifyOverride}
+          onCreateCourierDispatch={createCourierDispatch}
           onExportLog={exportLogJson}
           onSyncNow={broadcastDelta}
         />
@@ -163,9 +168,11 @@ function ResilioShell() {
               items={itemsList}
               distributionEntries={distributionEntries}
               cursors={cursors}
+              courierDispatches={courierDispatches}
               qrProgress={qrProgress}
               getQrChunks={getQrChunks}
               onImportQrFrame={importQrFrame}
+              onCompleteDispatch={completeCourierDispatch}
             />
           ) : mobileTab === 'sync' ? (
             <P2PSyncScreen

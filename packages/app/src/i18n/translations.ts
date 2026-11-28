@@ -87,6 +87,20 @@ export const COPY: Record<
     syncedPeersTitle: string;
     noPeersSyncedYet: string;
     manifestAuditTitle: string;
+    dispatchFormTitle: string;
+    dispatchFormSub: string;
+    dispatchCourierLabel: string;
+    dispatchDestLabel: string;
+    dispatchAssignBtn: string;
+    dispatchQrModalTitle: string;
+    dispatchQrModalSub: string;
+    dispatchActiveListTitle: string;
+    courierActiveTasksTitle: string;
+    courierNoTasksSub: string;
+    confirmDeliverBtn: string;
+    deliveredBadge: string;
+    inTransitBadge: string;
+    assignedBadge: string;
   }
 > = {
   en: {
@@ -175,6 +189,20 @@ export const COPY: Record<
     syncedPeersTitle: 'Posts & Peers Synced',
     noPeersSyncedYet: 'No QR sync recorded yet. Scan a post QR to start relaying.',
     manifestAuditTitle: 'Carried Logistics Audit Trail',
+    dispatchFormTitle: 'Assign Courier Aid Delivery',
+    dispatchFormSub: 'Create an offline dispatch order and generate a QR task for the courier',
+    dispatchCourierLabel: 'Courier Unit',
+    dispatchDestLabel: 'Destination Post',
+    dispatchAssignBtn: 'Assign & Generate Dispatch QR',
+    dispatchQrModalTitle: 'Courier Dispatch QR (RLD1)',
+    dispatchQrModalSub: 'Courier scans this QR at Command Center before departing',
+    dispatchActiveListTitle: 'Assigned Deliveries',
+    courierActiveTasksTitle: 'Active Delivery Tasks',
+    courierNoTasksSub: 'No active dispatch yet. Scan a Dispatch QR (RLD1) from Command Center.',
+    confirmDeliverBtn: 'Confirm Arrival & Generate Handover QR',
+    deliveredBadge: 'Delivered',
+    inTransitBadge: 'In Transit',
+    assignedBadge: 'Assigned',
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
@@ -262,5 +290,19 @@ export const COPY: Record<
     syncedPeersTitle: 'Posko & Peer Tersinkron',
     noPeersSyncedYet: 'Belum ada sinkronisasi QR. Scan QR posko untuk mulai relay.',
     manifestAuditTitle: 'Riwayat Logistik Terbawa',
+    dispatchFormTitle: 'Tugaskan Pengiriman Bantuan Kurir',
+    dispatchFormSub: 'Buat perintah pengiriman offline dan hasilkan QR tugas untuk kurir',
+    dispatchCourierLabel: 'Unit Kurir',
+    dispatchDestLabel: 'Posko Tujuan',
+    dispatchAssignBtn: 'Tugaskan & Buat QR Tugas',
+    dispatchQrModalTitle: 'QR Tugas Kurir (RLD1)',
+    dispatchQrModalSub: 'Kurir memindai QR ini di Command Center sebelum berangkat',
+    dispatchActiveListTitle: 'Daftar Penugasan Kurir',
+    courierActiveTasksTitle: 'Tugas Pengiriman Aktif',
+    courierNoTasksSub: 'Belum ada tugas aktif. Scan QR Tugas (RLD1) dari Command Center.',
+    confirmDeliverBtn: 'Tiba & Serahkan (Buat QR Serah Terima)',
+    deliveredBadge: 'Terkirim',
+    inTransitBadge: 'Dalam Perjalanan',
+    assignedBadge: 'Ditugaskan',
   },
 };

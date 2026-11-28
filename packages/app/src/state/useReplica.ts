@@ -39,12 +39,18 @@ import {
 } from '../engine/errorMessages';
 import {
   ACTIVE_NODE_PARAM,
+  DISPATCH_QR_PREFIX,
   addRatifiedOverride,
   db,
+  decodeCourierDispatchQr,
+  encodeCourierDispatchQr,
   ensureSeededReplica,
   getRatifiedOverrides,
+  markCourierDispatchDelivered,
   requestPersistentStorage,
   saveReplicaAtomic,
+  upsertCourierDispatch,
+  type CourierDispatch,
   type KvRow,
   type PeerCursorRow,
   type ReplicaRow,
@@ -192,6 +198,21 @@ export function useReplica(lang: AppLanguage) {
       return [];
     }
   }, [ratifiedRow]);
+
+  const dispatchRow = useLiveQuery<KvRow | undefined>(
+    async () => (dbReady ? await db.kv.get('courierDispatches') : undefined),
+    [dbReady],
+  );
+
+  const courierDispatches = useMemo<CourierDispatch[]>(() => {
+    if (!dispatchRow) return [];
+    try {
+      const parsed: unknown = JSON.parse(dispatchRow.value);
+      return Array.isArray(parsed) ? (parsed as CourierDispatch[]) : [];
+    } catch {
+      return [];
+    }
+  }, [dispatchRow]);
 
   const replica: Replica | null = useMemo(() => {
     if (!currentRow) return null;
@@ -522,6 +543,30 @@ export function useReplica(lang: AppLanguage) {
 
   const importQrFrame = useCallback(
     async (frameText: string): Promise<Result<ChunkProgress, AnyEngineErrorCode>> => {
+      const trimmed = frameText.trim();
+      if (trimmed.startsWith(DISPATCH_QR_PREFIX)) {
+        const parsed = decodeCourierDispatchQr(trimmed);
+        if (!parsed) {
+          pushToast(
+            'error',
+            langRef.current === 'en' ? 'Invalid Dispatch QR' : 'QR Tugas Tidak Valid',
+            langRef.current === 'en'
+              ? 'Could not parse RLD1 dispatch payload.'
+              : 'Gagal membaca payload QR tugas RLD1.',
+          );
+          return err('BAD_ENCODING');
+        }
+        await upsertCourierDispatch(parsed);
+        const l = langRef.current;
+        pushToast(
+          'success',
+          l === 'en' ? 'Dispatch Task Received' : 'Tugas Pengiriman Diterima',
+          l === 'en'
+            ? `${parsed.id}: Deliver +${parsed.qty} ${parsed.itemId} → ${parsed.toPost}`
+            : `${parsed.id}: Antar +${parsed.qty} ${parsed.itemId} → ${parsed.toPost}`,
+        );
+        return ok({ msgId: parsed.id, received: 1, total: 1, complete: true });
+      }
       try {
         const progress = collectorRef.current.add(frameText);
         setQrProgress(progress);
@@ -589,6 +634,65 @@ export function useReplica(lang: AppLanguage) {
         : `Mentransfer ${frames.length} frame QR (CRC ${env.crc32}) ke Command Center.`,
     );
   }, [pushToast]);
+
+  const createCourierDispatch = useCallback(
+    async (input: {
+      toPost: string;
+      courierId: string;
+      itemId: ItemId;
+      qty: number;
+      note?: string;
+      from?: string;
+    }): Promise<{ dispatch: CourierDispatch; qrText: string }> => {
+      const dispatch: CourierDispatch = {
+        id: `DSP-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
+        from: input.from ?? 'CMD-ALFA7',
+        toPost: input.toPost,
+        courierId: input.courierId,
+        itemId: input.itemId,
+        qty: Math.max(1, Math.round(input.qty)),
+        ...(input.note && input.note.trim() ? { note: input.note.trim() } : {}),
+        createdAt: formatNowIso(),
+        status: 'assigned',
+      };
+      await upsertCourierDispatch(dispatch);
+      const l = langRef.current;
+      pushToast(
+        'success',
+        l === 'en' ? 'Dispatch Assigned' : 'Tugas Kurir Dibuat',
+        l === 'en'
+          ? `${dispatch.id} for ${dispatch.courierId} → ${dispatch.toPost}`
+          : `${dispatch.id} untuk ${dispatch.courierId} → ${dispatch.toPost}`,
+      );
+      return { dispatch, qrText: encodeCourierDispatchQr(dispatch) };
+    },
+    [pushToast],
+  );
+
+  const completeCourierDispatch = useCallback(
+    async (dispatchId: string, courierOfficerId: string): Promise<boolean> => {
+      const target = courierDispatches.find((d) => d.id === dispatchId);
+      if (!target || target.status === 'delivered') return false;
+      const res = await doReceive(
+        target.itemId,
+        target.qty,
+        `${courierOfficerId} → ${target.toPost}`,
+        `${target.id}${target.note ? `: ${target.note}` : ''}`,
+      );
+      if (!res.ok) return false;
+      await markCourierDispatchDelivered(dispatchId);
+      const l = langRef.current;
+      pushToast(
+        'success',
+        l === 'en' ? 'Handover QR Ready' : 'QR Serah Terima Siap',
+        l === 'en'
+          ? `Recorded +${target.qty} ${target.itemId} in CRDT. Show Relay QR to ${target.toPost} to sync.`
+          : `+${target.qty} ${target.itemId} tercatat di CRDT. Tunjukkan QR Relay ke ${target.toPost} untuk sinkron.`,
+      );
+      return true;
+    },
+    [courierDispatches, doReceive, pushToast],
+  );
 
   const exportLogJson = useCallback(() => {
     const current = replicaRef.current;
@@ -659,6 +763,7 @@ export function useReplica(lang: AppLanguage) {
     nearbyPeers,
     unsyncedCount,
     ratifiedOverrides,
+    courierDispatches,
     qrProgress,
     toast,
     dismissToast: () => setToast(null),
@@ -674,6 +779,8 @@ export function useReplica(lang: AppLanguage) {
     getQrChunks,
     importQrFrame,
     simulateCourierArrival,
+    createCourierDispatch,
+    completeCourierDispatch,
     exportLogJson,
   };
 }

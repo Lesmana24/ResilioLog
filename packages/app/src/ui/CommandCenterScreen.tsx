@@ -5,6 +5,7 @@ import {
   Check,
   Clock,
   Compass,
+  Copy,
   Download,
   GitCompareArrows,
   LogOut,
@@ -12,6 +13,7 @@ import {
   MapPin,
   Package,
   PieChart,
+  QrCode,
   Radar,
   RefreshCw,
   Route,
@@ -23,11 +25,16 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { DistributionEntry, ItemId, Tag, TopUpRequest } from '@resiliolog/crdt-core';
 import type { AppLanguage } from '../engine/errorMessages';
 import { COPY } from '../i18n/translations';
 import type { ItemViewModel } from '../state/useReplica';
-import type { PeerCursorRow } from '../storage/db';
+import {
+  encodeCourierDispatchQr,
+  type CourierDispatch,
+  type PeerCursorRow,
+} from '../storage/db';
 
 type CommandSection = 'map' | 'quota' | 'convergence' | 'fleet';
 type MapPostId = 'posko-a04' | 'posko-c02' | 'posko-b07';
@@ -42,8 +49,16 @@ interface CommandCenterScreenProps {
   topUpRequests: ReadonlyArray<{ tag: Tag; el: TopUpRequest }>;
   cursors: PeerCursorRow[];
   ratifiedOverrides: string[];
+  courierDispatches: CourierDispatch[];
   onApproveReroute: (itemId: ItemId, qty: number, topUpTag?: Tag) => Promise<unknown>;
   onRatifyOverride: (overrideId: string) => Promise<void>;
+  onCreateCourierDispatch: (input: {
+    toPost: string;
+    courierId: string;
+    itemId: ItemId;
+    qty: number;
+    note?: string;
+  }) => Promise<{ dispatch: CourierDispatch; qrText: string }>;
   onExportLog: () => void;
   onSyncNow: () => Promise<void>;
 }
@@ -67,8 +82,10 @@ export function CommandCenterScreen({
   topUpRequests,
   cursors,
   ratifiedOverrides,
+  courierDispatches,
   onApproveReroute,
   onRatifyOverride,
+  onCreateCourierDispatch,
   onExportLog,
   onSyncNow,
 }: CommandCenterScreenProps) {
@@ -78,6 +95,15 @@ export function CommandCenterScreen({
   const [searchTerm, setSearchTerm] = useState('');
   const [rebalanceBanner, setRebalanceBanner] = useState<string | null>(null);
   const [selectedPostId, setSelectedPostId] = useState<MapPostId | null>('posko-a04');
+  const [dispatchCourier, setDispatchCourier] = useState('KURIR-04');
+  const [dispatchDest, setDispatchDest] = useState('Posko A-04');
+  const [dispatchItemId, setDispatchItemId] = useState<ItemId>('sembako');
+  const [dispatchQty, setDispatchQty] = useState(50);
+  const [dispatchNote, setDispatchNote] = useState('');
+  const [activeDispatchQr, setActiveDispatchQr] = useState<{
+    dispatch: CourierDispatch;
+    qrText: string;
+  } | null>(null);
 
   const sembako = useMemo(
     () => items.find((i) => i.id === 'sembako') ?? items[0],
@@ -1306,7 +1332,201 @@ export function CommandCenterScreen({
           )}
 
           {activeSection === 'fleet' && (
-            <section className="px-5 pb-8">
+            <section className="space-y-4 px-5 pb-8">
+              {/* Assign Courier Delivery + QR Task Generator */}
+              <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
+                <div className="border-b border-slate-100 pb-3">
+                  <h2 className="font-display text-base font-bold">{t.dispatchFormTitle}</h2>
+                  <p className="text-xs text-slate-500">{t.dispatchFormSub}</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      {t.dispatchCourierLabel}
+                    </label>
+                    <select
+                      value={dispatchCourier}
+                      onChange={(e) => setDispatchCourier(e.target.value)}
+                      className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 text-xs font-semibold"
+                    >
+                      <option value="KURIR-04">KURIR-04 (Fleet #04)</option>
+                      <option value="KURIR-02">KURIR-02 (Fleet #02)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      {t.dispatchDestLabel}
+                    </label>
+                    <select
+                      value={dispatchDest}
+                      onChange={(e) => setDispatchDest(e.target.value)}
+                      className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 text-xs font-semibold"
+                    >
+                      <option value="Posko A-04">Posko A-04</option>
+                      <option value="Posko B-07">Posko B-07</option>
+                      <option value="Posko C-02">Posko C-02</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      {t.commodityLabel}
+                    </label>
+                    <select
+                      value={dispatchItemId}
+                      onChange={(e) => setDispatchItemId(e.target.value)}
+                      className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 text-xs font-semibold"
+                    >
+                      {items.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      {t.qtyLabel}
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={dispatchQty}
+                      onChange={(e) =>
+                        setDispatchQty(Math.max(1, Number.parseInt(e.target.value || '1', 10)))
+                      }
+                      className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 font-mono text-xs font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      {lang === 'en' ? 'Note (Optional)' : 'Catatan (Opsional)'}
+                    </label>
+                    <input
+                      type="text"
+                      value={dispatchNote}
+                      onChange={(e) => setDispatchNote(e.target.value)}
+                      placeholder={lang === 'en' ? 'Urgent food aid' : 'Bantuan darurat'}
+                      className="h-10 w-full rounded-lg border border-slate-300 bg-slate-50 px-2.5 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const created = await onCreateCourierDispatch({
+                        toPost: dispatchDest,
+                        courierId: dispatchCourier,
+                        itemId: dispatchItemId,
+                        qty: dispatchQty,
+                        ...(dispatchNote.trim() ? { note: dispatchNote.trim() } : {}),
+                      });
+                      setActiveDispatchQr(created);
+                      setDispatchNote('');
+                    }}
+                    className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#0F172A] px-4 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
+                  >
+                    <QrCode className="h-4 w-4" />
+                    <span>{t.dispatchAssignBtn}</span>
+                  </button>
+                </div>
+
+                {activeDispatchQr && (
+                  <div className="flex flex-col items-center gap-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4 md:flex-row">
+                    <div className="shrink-0 rounded-xl bg-white p-3 shadow-xs">
+                      <QRCodeSVG value={activeDispatchQr.qrText} size={172} level="M" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-display text-sm font-bold text-[#0F172A]">
+                          {t.dispatchQrModalTitle} — {activeDispatchQr.dispatch.id}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveDispatchQr(null)}
+                          className="rounded p-1 text-slate-400 hover:bg-amber-100 hover:text-slate-700"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-600">{t.dispatchQrModalSub}</p>
+                      <div className="rounded-lg bg-white px-3 py-2 text-xs font-semibold text-[#0F172A]">
+                        {activeDispatchQr.dispatch.courierId} →{' '}
+                        {activeDispatchQr.dispatch.toPost} • +{activeDispatchQr.dispatch.qty}{' '}
+                        {itemNamesById[activeDispatchQr.dispatch.itemId]?.name ??
+                          activeDispatchQr.dispatch.itemId}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void navigator.clipboard?.writeText(activeDispatchQr.qrText);
+                          }}
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-[#0F172A] hover:bg-slate-50"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>{lang === 'en' ? 'Copy RLD1 Code' : 'Salin Kode RLD1'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {courierDispatches.length > 0 && (
+                  <div className="border-t border-slate-100 pt-3">
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+                      {t.dispatchActiveListTitle} ({courierDispatches.length})
+                    </h3>
+                    <div className="divide-y divide-slate-100 rounded-xl border border-slate-200">
+                      {courierDispatches.map((d) => (
+                        <div
+                          key={d.id}
+                          className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs"
+                        >
+                          <div>
+                            <span className="font-mono font-bold text-[#0F172A]">{d.id}</span> •{' '}
+                            <span className="font-semibold">{d.courierId}</span> →{' '}
+                            <span className="font-semibold">{d.toPost}</span> (+{d.qty}{' '}
+                            {itemNamesById[d.itemId]?.name ?? d.itemId})
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                d.status === 'delivered'
+                                  ? 'bg-emerald-100 text-[#059669]'
+                                  : d.status === 'in_transit'
+                                    ? 'bg-amber-100 text-[#B45309]'
+                                    : 'bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              {d.status === 'delivered'
+                                ? t.deliveredBadge
+                                : d.status === 'in_transit'
+                                  ? t.inTransitBadge
+                                  : t.assignedBadge}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setActiveDispatchQr({
+                                  dispatch: d,
+                                  qrText: encodeCourierDispatchQr(d),
+                                })
+                              }
+                              className="cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0F172A] hover:bg-slate-50"
+                            >
+                              QR
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div>
