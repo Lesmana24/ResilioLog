@@ -4,7 +4,7 @@
       <stop offset="0%" stop-color="#1E293B" />
       <stop offset="100%" stop-color="#0B1120" />
     </linearGradient>
-    <linearGradient id="emeraldFlow" x1="56" y1="64" x2="96" y2="100" gradientUnits="userSpaceOnUse">
+    <linearGradient id="emeraldFlow" x1="58" y1="44" x2="96" y2="102" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#34D399" />
       <stop offset="100%" stop-color="#059669" />
     </linearGradient>
@@ -20,22 +20,22 @@
     stroke-width="2"
   />
   <!-- Vertical Field Post Spine -->
-  <rect x="34" y="28" width="16" height="72" rx="6" fill="#F8FAFC" />
+  <rect x="33" y="26" width="14" height="76" rx="5" fill="#F8FAFC" />
   <!-- Shield-Arch Upper Bowl of 'R' -->
   <path
-    d="M42 35.5 H71 C82.5 35.5 89 41.5 89 49 C89 56.5 82.5 62.5 71 62.5 H42"
+    d="M40 33 H68 C81 33 88 40 88 49 C88 58 81 65 68 65 H40"
     stroke="#F8FAFC"
-    stroke-width="15"
+    stroke-width="14"
     stroke-linecap="round"
     stroke-linejoin="round"
   />
-  <!-- CRDT Convergence Beacon inside Counter -->
-  <circle cx="64" cy="49" r="7.5" fill="url(#emeraldFlow)" />
-  <!-- Forward Logistics Dispatch Leg -->
+  <!-- CRDT Convergence Beacon inside Counter (zero overlap) -->
+  <circle cx="64" cy="49" r="5.2" fill="url(#emeraldFlow)" />
+  <!-- Forward Logistics Dispatch Leg (zero overlap, flush baseline at y=102) -->
   <path
-    d="M62 71 L89 96"
+    d="M68 81 L88 95"
     stroke="url(#emeraldFlow)"
-    stroke-width="16"
+    stroke-width="14"
     stroke-linecap="round"
   />
 </svg>
