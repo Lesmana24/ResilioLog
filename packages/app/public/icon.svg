@@ -1,32 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0F172A" />
-      <stop offset="100%" stop-color="#1E293B" />
+    <linearGradient id="navyBg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="100%" stop-color="#0B1120" />
     </linearGradient>
-    <linearGradient id="topFacet" x1="32" y1="26" x2="96" y2="64" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.32" />
-      <stop offset="100%" stop-color="#059669" stop-opacity="0.16" />
+    <linearGradient id="emeraldFlow" x1="56" y1="64" x2="96" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#34D399" />
+      <stop offset="100%" stop-color="#059669" />
     </linearGradient>
   </defs>
-  <rect x="2" y="2" width="124" height="124" rx="28" fill="url(#bg)" stroke="#334155" stroke-width="2" />
-  <polygon points="64,26 96,44 64,64 32,44" fill="url(#topFacet)" />
-  <path
-    d="M64 26 L96 44 L96 84 L64 102 L32 84 L32 44 Z"
-    stroke="#F8FAFC"
-    stroke-width="5.5"
-    stroke-linejoin="round"
+  <rect
+    x="2"
+    y="2"
+    width="124"
+    height="124"
+    rx="28"
+    fill="url(#navyBg)"
+    stroke="#334155"
+    stroke-width="2"
   />
+  <!-- Vertical Field Post Spine -->
+  <rect x="34" y="28" width="16" height="72" rx="6" fill="#F8FAFC" />
+  <!-- Shield-Arch Upper Bowl of 'R' -->
   <path
-    d="M32 44 L64 64 L96 44 M64 64 L64 102"
+    d="M42 35.5 H71 C82.5 35.5 89 41.5 89 49 C89 56.5 82.5 62.5 71 62.5 H42"
     stroke="#F8FAFC"
-    stroke-width="5"
+    stroke-width="15"
     stroke-linecap="round"
     stroke-linejoin="round"
   />
-  <circle cx="64" cy="26" r="7.5" fill="#10B981" stroke="#0F172A" stroke-width="2.5" />
-  <circle cx="32" cy="84" r="7.5" fill="#10B981" stroke="#0F172A" stroke-width="2.5" />
-  <circle cx="96" cy="84" r="7.5" fill="#10B981" stroke="#0F172A" stroke-width="2.5" />
-  <circle cx="64" cy="64" r="8" fill="#10B981" />
-  <circle cx="64" cy="64" r="3.2" fill="#FFFFFF" />
+  <!-- CRDT Convergence Beacon inside Counter -->
+  <circle cx="64" cy="49" r="7.5" fill="url(#emeraldFlow)" />
+  <!-- Forward Logistics Dispatch Leg -->
+  <path
+    d="M62 71 L89 96"
+    stroke="url(#emeraldFlow)"
+    stroke-width="16"
+    stroke-linecap="round"
+  />
 </svg>
