@@ -73,6 +73,20 @@ export const COPY: Record<
     quickEnterCommandSub: string;
     signOutBtn: string;
     signedInAs: string;
+    courierRelayTab: string;
+    courierManifestTab: string;
+    courierRelayTitle: string;
+    courierManifestTitle: string;
+    courierReadySub: string;
+    scanFromPostBtn: string;
+    showRelayQrBtn: string;
+    carriedLogsLabel: string;
+    syncedPostsLabel: string;
+    qrFramesLabel: string;
+    carriedStockTitle: string;
+    syncedPeersTitle: string;
+    noPeersSyncedYet: string;
+    manifestAuditTitle: string;
   }
 > = {
   en: {
@@ -147,6 +161,20 @@ export const COPY: Record<
     quickEnterCommandSub: 'Desktop dashboard • Map, Quota & CvRDT Log',
     signOutBtn: 'Sign Out',
     signedInAs: 'Signed in as',
+    courierRelayTab: 'QR Relay',
+    courierManifestTab: 'Manifest',
+    courierRelayTitle: 'Offline QR Relay',
+    courierManifestTitle: 'Courier Manifest',
+    courierReadySub: 'Carry CRDT deltas between disconnected posts via QR',
+    scanFromPostBtn: 'Scan QR from Post',
+    showRelayQrBtn: 'Show Relay QR',
+    carriedLogsLabel: 'Carried Logs',
+    syncedPostsLabel: 'Synced Posts',
+    qrFramesLabel: 'QR Frames',
+    carriedStockTitle: 'Carried Stock Snapshot (Read-Only)',
+    syncedPeersTitle: 'Posts & Peers Synced',
+    noPeersSyncedYet: 'No QR sync recorded yet. Scan a post QR to start relaying.',
+    manifestAuditTitle: 'Carried Logistics Audit Trail',
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
@@ -220,5 +248,19 @@ export const COPY: Record<
     quickEnterCommandSub: 'Dashboard desktop • Peta, Kuota & Log CvRDT',
     signOutBtn: 'Keluar',
     signedInAs: 'Masuk sebagai',
+    courierRelayTab: 'Relay QR',
+    courierManifestTab: 'Manifest',
+    courierRelayTitle: 'Relay QR Offline',
+    courierManifestTitle: 'Manifest Kurir',
+    courierReadySub: 'Bawa delta CRDT antar posko terputus melalui QR',
+    scanFromPostBtn: 'Scan QR dari Posko',
+    showRelayQrBtn: 'Tampilkan QR Relay',
+    carriedLogsLabel: 'Log Dibawa',
+    syncedPostsLabel: 'Posko Tersinkron',
+    qrFramesLabel: 'Frame QR',
+    carriedStockTitle: 'Ringkasan Stok Terbawa (Baca Saja)',
+    syncedPeersTitle: 'Posko & Peer Tersinkron',
+    noPeersSyncedYet: 'Belum ada sinkronisasi QR. Scan QR posko untuk mulai relay.',
+    manifestAuditTitle: 'Riwayat Logistik Terbawa',
   },
 };

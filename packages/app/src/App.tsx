@@ -5,6 +5,7 @@ import type { AppLanguage } from './engine/errorMessages';
 import { COPY } from './i18n/translations';
 import { useReplica } from './state/useReplica';
 import { CommandCenterScreen } from './ui/CommandCenterScreen';
+import { CourierScreen } from './ui/CourierScreen';
 import { InventarisScreen } from './ui/InventarisScreen';
 import { LoginScreen, type EntityRole } from './ui/LoginScreen';
 import type { MobileTab } from './ui/MobileBottomNav';
@@ -153,7 +154,20 @@ function ResilioShell() {
         />
       ) : (
         <div className="flex min-h-0 flex-1 justify-center py-0 sm:py-4">
-          {mobileTab === 'sync' ? (
+          {session.role === 'courier' ? (
+            <CourierScreen
+              lang={lang}
+              onChangeLang={setLang}
+              officerId={session.officerId}
+              onLogout={handleLogout}
+              items={itemsList}
+              distributionEntries={distributionEntries}
+              cursors={cursors}
+              qrProgress={qrProgress}
+              getQrChunks={getQrChunks}
+              onImportQrFrame={importQrFrame}
+            />
+          ) : mobileTab === 'sync' ? (
             <P2PSyncScreen
               activeTab={mobileTab}
               onChangeTab={setMobileTab}
