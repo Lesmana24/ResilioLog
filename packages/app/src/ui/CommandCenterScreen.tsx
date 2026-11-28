@@ -14,7 +14,6 @@ import {
   Package,
   PieChart,
   QrCode,
-  Radar,
   RefreshCw,
   Route,
   Search,
@@ -271,9 +270,7 @@ export function CommandCenterScreen({
         <aside className="flex w-full shrink-0 flex-col justify-between border-b border-slate-200 bg-white lg:min-h-screen lg:w-60 lg:border-b-0 lg:border-r">
           <div>
             <div className="flex h-14 items-center gap-3 border-b border-slate-200 bg-slate-50 px-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0F172A] text-white">
-                <Radar className="h-4 w-4" />
-              </div>
+              <img src="/icon.svg" alt="ResilioLog" className="h-8 w-8 shrink-0 rounded-lg" />
               <div className="min-w-0">
                 <div className="font-display truncate text-sm font-extrabold">ResilioLog</div>
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
