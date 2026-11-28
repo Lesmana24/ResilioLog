@@ -17,44 +17,57 @@ function checkIsIos(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent);
 }
 
+let globalDeferredPrompt: BeforeInstallPromptEvent | null = null;
+let globalIsInstalled = checkStandalone();
+const listeners = new Set<() => void>();
+
+function notifyListeners() {
+  for (const listener of listeners) {
+    listener();
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeinstallprompt', (e: Event) => {
+    e.preventDefault();
+    globalDeferredPrompt = e as BeforeInstallPromptEvent;
+    notifyListeners();
+  });
+
+  window.addEventListener('appinstalled', () => {
+    globalIsInstalled = true;
+    globalDeferredPrompt = null;
+    notifyListeners();
+  });
+}
+
 export function usePwaInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState<boolean>(() => checkStandalone());
+  const [, setTick] = useState(0);
   const [isIos] = useState<boolean>(() => checkIsIos());
 
   useEffect(() => {
-    function handleBeforeInstallPrompt(e: Event) {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-    }
-
-    function handleAppInstalled() {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    const update = () => setTick((t) => t + 1);
+    listeners.add(update);
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      listeners.delete(update);
     };
   }, []);
 
   const promptInstall = useCallback(async (): Promise<'accepted' | 'dismissed' | 'unavailable'> => {
-    if (!deferredPrompt) return 'unavailable';
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    if (!globalDeferredPrompt) return 'unavailable';
+    await globalDeferredPrompt.prompt();
+    const { outcome } = await globalDeferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      setIsInstalled(true);
+      globalIsInstalled = true;
     }
-    setDeferredPrompt(null);
+    globalDeferredPrompt = null;
+    notifyListeners();
     return outcome;
-  }, [deferredPrompt]);
+  }, []);
 
   return {
-    canInstall: deferredPrompt !== null,
-    isInstalled,
+    canInstall: globalDeferredPrompt !== null,
+    isInstalled: globalIsInstalled,
     isIos,
     promptInstall,
   };
