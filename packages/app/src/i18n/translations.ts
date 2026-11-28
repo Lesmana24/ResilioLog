@@ -66,8 +66,6 @@ export const COPY: Record<
     quickEnterVolunteerSub: string;
     quickEnterCommand: string;
     quickEnterCommandSub: string;
-    switchToCommand: string;
-    switchToVolunteer: string;
     signOutBtn: string;
     signedInAs: string;
   }
@@ -137,8 +135,6 @@ export const COPY: Record<
     quickEnterVolunteerSub: 'Mobile view • Inventory, P2P Sync & History',
     quickEnterCommand: 'Enter as Command Center',
     quickEnterCommandSub: 'Desktop dashboard • Map, Quota & CvRDT Log',
-    switchToCommand: 'Switch to Command Center',
-    switchToVolunteer: 'Switch to Volunteer',
     signOutBtn: 'Sign Out',
     signedInAs: 'Signed in as',
   },
@@ -207,8 +203,6 @@ export const COPY: Record<
     quickEnterVolunteerSub: 'Tampilan mobile • Inventaris, P2P Sync & Riwayat',
     quickEnterCommand: 'Masuk sebagai Command Center',
     quickEnterCommandSub: 'Dashboard desktop • Peta, Kuota & Log CvRDT',
-    switchToCommand: 'Pindah ke Command Center',
-    switchToVolunteer: 'Pindah ke Relawan',
     signOutBtn: 'Keluar',
     signedInAs: 'Masuk sebagai',
   },

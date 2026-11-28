@@ -96,13 +96,6 @@ function ResilioShell() {
     writeStoredSession(sessionStorageKey, next);
   }
 
-  function handleSwitchMode(mode: ViewMode) {
-    if (!session) return;
-    const next: AuthSession = { ...session, mode };
-    setSession(next);
-    writeStoredSession(sessionStorageKey, next);
-  }
-
   function handleLogout() {
     setSession(null);
     writeStoredSession(sessionStorageKey, null);
@@ -136,7 +129,6 @@ function ResilioShell() {
           lang={lang}
           onChangeLang={setLang}
           officerId={session.officerId}
-          onSwitchToVolunteer={() => handleSwitchMode('mobile')}
           onLogout={handleLogout}
           items={itemsList}
           distributionEntries={distributionEntries}
@@ -159,7 +151,6 @@ function ResilioShell() {
               nodeParam={activeNodeParam}
               nodeId={replica.nodeId}
               officerId={session.officerId}
-              onSwitchToCommand={() => handleSwitchMode('command')}
               onLogout={handleLogout}
               items={itemsList}
               distributionEntries={distributionEntries}
@@ -180,7 +171,6 @@ function ResilioShell() {
               onChangeLang={setLang}
               nodeParam={activeNodeParam}
               officerId={session.officerId}
-              onSwitchToCommand={() => handleSwitchMode('command')}
               onLogout={handleLogout}
               items={itemsList}
               distributionEntries={distributionEntries}
