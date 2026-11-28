@@ -67,6 +67,8 @@ export const COPY: Record<
     quickEnterVolunteerASub: string;
     quickEnterVolunteerB: string;
     quickEnterVolunteerBSub: string;
+    quickEnterVolunteerC: string;
+    quickEnterVolunteerCSub: string;
     quickEnterCourier: string;
     quickEnterCourierSub: string;
     quickEnterCommand: string;
@@ -169,6 +171,8 @@ export const COPY: Record<
     quickEnterVolunteerASub: 'North Sector • Inventory, P2P Sync & History',
     quickEnterVolunteerB: 'Field Volunteer — Posko B-07',
     quickEnterVolunteerBSub: 'Surplus Depot • Secondary field peer for sync',
+    quickEnterVolunteerC: 'Field Volunteer — Posko C-02',
+    quickEnterVolunteerCSub: 'South Sector • Critical supply outpost',
     quickEnterCourier: 'Logistics Courier — Fleet #04',
     quickEnterCourierSub: 'QR Relay Mode • Opens directly on QR Sync & Scan',
     quickEnterCommand: 'Enter as Command Center',
@@ -270,6 +274,8 @@ export const COPY: Record<
     quickEnterVolunteerASub: 'Sektor Utara • Inventaris, P2P Sync & Riwayat',
     quickEnterVolunteerB: 'Relawan Lapangan — Posko B-07',
     quickEnterVolunteerBSub: 'Posko Surplus • Relawan peer kedua untuk sinkronisasi',
+    quickEnterVolunteerC: 'Relawan Lapangan — Posko C-02',
+    quickEnterVolunteerCSub: 'Sektor Selatan • Posko darurat stok kritis',
     quickEnterCourier: 'Kurir Logistik — Armada #04',
     quickEnterCourierSub: 'Mode Relay QR • Langsung buka tab QR Sync & Scan',
     quickEnterCommand: 'Masuk sebagai Command Center',

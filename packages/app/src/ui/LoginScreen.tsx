@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Database,
   Lock,
+  MapPin,
   Monitor,
   Radar,
   ShieldCheck,
@@ -195,6 +196,23 @@ export function LoginScreen({
                 <div>
                   <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterVolunteerB}</div>
                   <div className="text-[11px] text-slate-500">{t.quickEnterVolunteerBSub}</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onLogin('mobile', 'volunteer', 'POSKO-C02')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-left transition-all hover:border-rose-400/50 hover:bg-rose-50/60 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-700">
+                  <MapPin className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterVolunteerC}</div>
+                  <div className="text-[11px] text-slate-500">{t.quickEnterVolunteerCSub}</div>
                 </div>
               </div>
               <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
