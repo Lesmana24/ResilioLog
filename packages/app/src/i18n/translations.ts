@@ -53,6 +53,23 @@ export const COPY: Record<
     mobileVolunteerBtn: string;
     commandCenterBtn: string;
     initializingDb: string;
+    loginSubtitle: string;
+    loginCardTitle: string;
+    loginCardSub: string;
+    officerIdLabel: string;
+    officerIdPlaceholder: string;
+    pinLabel: string;
+    pinPlaceholder: string;
+    signInBtn: string;
+    prototypeDivider: string;
+    quickEnterVolunteer: string;
+    quickEnterVolunteerSub: string;
+    quickEnterCommand: string;
+    quickEnterCommandSub: string;
+    switchToCommand: string;
+    switchToVolunteer: string;
+    signOutBtn: string;
+    signedInAs: string;
   }
 > = {
   en: {
@@ -107,6 +124,23 @@ export const COPY: Record<
     mobileVolunteerBtn: 'Mobile Volunteer',
     commandCenterBtn: 'Command Center',
     initializingDb: 'Initializing IndexedDB',
+    loginSubtitle: 'Offline-First Disaster Logistics',
+    loginCardTitle: 'Field Access Sign In',
+    loginCardSub: 'Authenticate locally on this device — works 100% offline',
+    officerIdLabel: 'Officer / Post ID',
+    officerIdPlaceholder: 'e.g. POSKO-A04',
+    pinLabel: 'Access PIN',
+    pinPlaceholder: 'Enter 6-digit PIN',
+    signInBtn: 'Sign In',
+    prototypeDivider: 'Prototype Quick Access',
+    quickEnterVolunteer: 'Enter as Field Volunteer',
+    quickEnterVolunteerSub: 'Mobile view • Inventory, P2P Sync & History',
+    quickEnterCommand: 'Enter as Command Center',
+    quickEnterCommandSub: 'Desktop dashboard • Map, Quota & CvRDT Log',
+    switchToCommand: 'Switch to Command Center',
+    switchToVolunteer: 'Switch to Volunteer',
+    signOutBtn: 'Sign Out',
+    signedInAs: 'Signed in as',
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
@@ -160,5 +194,22 @@ export const COPY: Record<
     mobileVolunteerBtn: 'Relawan Lapangan',
     commandCenterBtn: 'Command Center',
     initializingDb: 'Menyiapkan IndexedDB',
+    loginSubtitle: 'Logistik Bencana Offline-First',
+    loginCardTitle: 'Masuk Akses Lapangan',
+    loginCardSub: 'Autentikasi lokal di perangkat ini — berjalan 100% offline',
+    officerIdLabel: 'ID Petugas / Posko',
+    officerIdPlaceholder: 'cth. POSKO-A04',
+    pinLabel: 'PIN Akses',
+    pinPlaceholder: 'Masukkan PIN 6 digit',
+    signInBtn: 'Masuk',
+    prototypeDivider: 'Akses Cepat Prototipe',
+    quickEnterVolunteer: 'Masuk sebagai Relawan Lapangan',
+    quickEnterVolunteerSub: 'Tampilan mobile • Inventaris, P2P Sync & Riwayat',
+    quickEnterCommand: 'Masuk sebagai Command Center',
+    quickEnterCommandSub: 'Dashboard desktop • Peta, Kuota & Log CvRDT',
+    switchToCommand: 'Pindah ke Command Center',
+    switchToVolunteer: 'Pindah ke Relawan',
+    signOutBtn: 'Keluar',
+    signedInAs: 'Masuk sebagai',
   },
 };

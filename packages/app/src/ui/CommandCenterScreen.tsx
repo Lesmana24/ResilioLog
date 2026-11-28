@@ -7,6 +7,7 @@ import {
   Compass,
   Download,
   GitCompareArrows,
+  LogOut,
   Map as MapIcon,
   MapPin,
   Package,
@@ -17,6 +18,7 @@ import {
   Search,
   Send,
   ShieldCheck,
+  Smartphone,
   Truck,
   User,
   X,
@@ -34,7 +36,9 @@ type MapPostId = 'posko-a04' | 'posko-c02' | 'posko-b07';
 interface CommandCenterScreenProps {
   lang: AppLanguage;
   onChangeLang: (lang: AppLanguage) => void;
-  nodeParam: string;
+  officerId: string;
+  onSwitchToVolunteer: () => void;
+  onLogout: () => void;
   items: ItemViewModel[];
   distributionEntries: ReadonlyArray<{ tag: Tag; el: DistributionEntry }>;
   topUpRequests: ReadonlyArray<{ tag: Tag; el: TopUpRequest }>;
@@ -58,7 +62,9 @@ function formatClockTime(iso: string, lang: AppLanguage): string {
 export function CommandCenterScreen({
   lang,
   onChangeLang,
-  nodeParam,
+  officerId,
+  onSwitchToVolunteer,
+  onLogout,
   items,
   distributionEntries,
   topUpRequests,
@@ -299,10 +305,26 @@ export function CommandCenterScreen({
                 <div className="truncate text-xs font-bold">
                   {lang === 'en' ? 'Central Logistics Coord' : 'Koord. Logistik Pusat'}
                 </div>
-                <div className="truncate text-[11px] text-slate-500">
-                  {lang === 'en' ? 'Main Command Post' : 'Posko Komando Utama'}
-                </div>
+                <div className="truncate text-[11px] text-slate-500">{officerId}</div>
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 border-t border-slate-200 px-3 py-2.5">
+              <button
+                type="button"
+                onClick={onSwitchToVolunteer}
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                <Smartphone className="h-3 w-3" />
+                <span className="truncate">{t.switchToVolunteer}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                className="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-red-200 bg-white px-2 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-50"
+              >
+                <LogOut className="h-3 w-3" />
+                <span>{t.signOutBtn}</span>
+              </button>
             </div>
           </div>
         </aside>
@@ -321,7 +343,7 @@ export function CommandCenterScreen({
                     {lang === 'en' ? 'Regional Disaster Command Post' : 'Posko Komando Wilayah Bencana'}
                   </span>
                   <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
-                    {lang === 'en' ? `Sector Alfa-7 (${nodeParam})` : `Sektor Alfa-7 (${nodeParam})`}
+                    {lang === 'en' ? 'Sector Alfa-7' : 'Sektor Alfa-7'}
                   </span>
                 </div>
                 <span className="text-[11px] text-slate-500">{t.cmdSubtitle}</span>
@@ -355,10 +377,19 @@ export function CommandCenterScreen({
               <button
                 type="button"
                 onClick={onSyncNow}
-                className="flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-[#0F172A] shadow-xs hover:bg-slate-50"
+                className="flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-bold text-[#0F172A] shadow-xs hover:bg-slate-50"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>{lang === 'en' ? 'Sync Now' : 'Sinkronkan'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={onLogout}
+                title={t.signOutBtn}
+                className="flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-semibold text-red-600 shadow-xs hover:bg-red-50 lg:hidden"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span>{t.signOutBtn}</span>
               </button>
             </div>
           </header>

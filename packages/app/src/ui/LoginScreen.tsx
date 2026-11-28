@@ -1,0 +1,212 @@
+import { useState, type FormEvent } from 'react';
+import {
+  ArrowRight,
+  Database,
+  Lock,
+  Monitor,
+  Radar,
+  ShieldCheck,
+  Smartphone,
+  UserCheck,
+} from 'lucide-react';
+import type { AppLanguage } from '../engine/errorMessages';
+import { COPY } from '../i18n/translations';
+
+interface LoginScreenProps {
+  lang: AppLanguage;
+  onChangeLang: (lang: AppLanguage) => void;
+  persistenceGranted: boolean | null;
+  onRequestPersistence: () => Promise<boolean>;
+  onLogin: (mode: 'mobile' | 'command', officerId: string) => void;
+}
+
+export function LoginScreen({
+  lang,
+  onChangeLang,
+  persistenceGranted,
+  onRequestPersistence,
+  onLogin,
+}: LoginScreenProps) {
+  const t = COPY[lang];
+  const [officerId, setOfficerId] = useState('POSKO-A04');
+  const [pin, setPin] = useState('');
+
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    onLogin('mobile', officerId.trim() || 'POSKO-A04');
+  }
+
+  return (
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-[#F8FAFC] px-4 py-8 text-[#0F172A]">
+      <div className="w-full max-w-md">
+        {/* Top Brand + Language Toggle */}
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#0F172A] text-white shadow-sm">
+              <Radar className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="font-display text-xl font-extrabold tracking-tight text-[#0F172A]">
+                ResilioLog
+              </h1>
+              <p className="text-xs font-medium text-slate-500">{t.loginSubtitle}</p>
+            </div>
+          </div>
+
+          <div
+            className="inline-flex select-none items-center gap-1 rounded-full border border-[#E2E8F0] bg-white px-2.5 py-1 text-xs font-medium shadow-xs"
+            role="group"
+            aria-label="Language toggle"
+          >
+            <button
+              type="button"
+              onClick={() => onChangeLang('id')}
+              className={`cursor-pointer transition-colors ${
+                lang === 'id' ? 'font-bold text-[#0F172A]' : 'text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              ID
+            </button>
+            <span className="text-slate-300">|</span>
+            <button
+              type="button"
+              onClick={() => onChangeLang('en')}
+              className={`cursor-pointer transition-colors ${
+                lang === 'en' ? 'font-bold text-[#0F172A]' : 'text-slate-400 hover:text-slate-700'
+              }`}
+            >
+              EN
+            </button>
+          </div>
+        </div>
+
+        {/* Main Login Card */}
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5">
+            <h2 className="font-display text-lg font-extrabold tracking-tight text-[#0F172A]">
+              {t.loginCardTitle}
+            </h2>
+            <p className="mt-1 text-xs text-slate-500">{t.loginCardSub}</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="officer-id"
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600"
+              >
+                {t.officerIdLabel}
+              </label>
+              <div className="relative">
+                <UserCheck className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="officer-id"
+                  type="text"
+                  value={officerId}
+                  onChange={(e) => setOfficerId(e.target.value)}
+                  placeholder={t.officerIdPlaceholder}
+                  autoComplete="username"
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-slate-50/70 pl-10 pr-3.5 text-sm font-semibold text-[#0F172A] outline-none transition-colors focus:border-[#0F172A] focus:bg-white"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="access-pin"
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-600"
+              >
+                {t.pinLabel}
+              </label>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="access-pin"
+                  type="password"
+                  inputMode="numeric"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  placeholder={t.pinPlaceholder}
+                  autoComplete="current-password"
+                  className="h-11 w-full rounded-xl border border-slate-300 bg-slate-50/70 pl-10 pr-3.5 text-sm font-semibold text-[#0F172A] outline-none transition-colors focus:border-[#0F172A] focus:bg-white"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#0F172A] px-4 text-sm font-bold text-white shadow-sm transition-all hover:bg-slate-800 active:scale-[0.99]"
+            >
+              <span>{t.signInBtn}</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+
+          {/* Prototype Quick Access directly below Login button */}
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-slate-200" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+              {t.prototypeDivider}
+            </span>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="grid grid-cols-1 gap-2.5">
+            <button
+              type="button"
+              onClick={() => onLogin('mobile', officerId.trim() || 'POSKO-A04')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 text-left transition-all hover:border-[#059669]/40 hover:bg-emerald-50/50 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-[#059669]">
+                  <Smartphone className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterVolunteer}</div>
+                  <div className="text-[11px] text-slate-500">{t.quickEnterVolunteerSub}</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onLogin('command', 'CMD-ALFA7')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 text-left transition-all hover:border-[#0F172A]/40 hover:bg-slate-100 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-[#0F172A]">
+                  <Monitor className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterCommand}</div>
+                  <div className="text-[11px] text-slate-500">{t.quickEnterCommandSub}</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+          </div>
+        </div>
+
+        {/* Subtle Offline Storage Footer */}
+        <div className="mt-4 flex items-center justify-center">
+          {persistenceGranted === true ? (
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-[#059669]">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>{t.storagePersistent}</span>
+            </div>
+          ) : persistenceGranted === false ? (
+            <button
+              type="button"
+              onClick={onRequestPersistence}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-[#B45309] transition-colors hover:bg-amber-100"
+            >
+              <Database className="h-3.5 w-3.5" />
+              <span>{t.enablePersistentStorage}</span>
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
