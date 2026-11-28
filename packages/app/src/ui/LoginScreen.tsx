@@ -7,17 +7,21 @@ import {
   Radar,
   ShieldCheck,
   Smartphone,
+  Truck,
   UserCheck,
+  Users,
 } from 'lucide-react';
 import type { AppLanguage } from '../engine/errorMessages';
 import { COPY } from '../i18n/translations';
+
+export type EntityRole = 'volunteer' | 'courier' | 'command';
 
 interface LoginScreenProps {
   lang: AppLanguage;
   onChangeLang: (lang: AppLanguage) => void;
   persistenceGranted: boolean | null;
   onRequestPersistence: () => Promise<boolean>;
-  onLogin: (mode: 'mobile' | 'command', officerId: string) => void;
+  onLogin: (mode: 'mobile' | 'command', role: EntityRole, officerId: string) => void;
 }
 
 export function LoginScreen({
@@ -33,7 +37,17 @@ export function LoginScreen({
 
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    onLogin('mobile', officerId.trim() || 'POSKO-A04');
+    const id = officerId.trim() || 'POSKO-A04';
+    const upper = id.toUpperCase();
+    if (upper.startsWith('KURIR') || upper.startsWith('COURIER')) {
+      onLogin('mobile', 'courier', id);
+      return;
+    }
+    if (upper.startsWith('CMD')) {
+      onLogin('command', 'command', id);
+      return;
+    }
+    onLogin('mobile', 'volunteer', id);
   }
 
   return (
@@ -151,19 +165,19 @@ export function LoginScreen({
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <div className="grid grid-cols-1 gap-2.5">
+          <div className="grid grid-cols-1 gap-2">
             <button
               type="button"
-              onClick={() => onLogin('mobile', officerId.trim() || 'POSKO-A04')}
-              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 text-left transition-all hover:border-[#059669]/40 hover:bg-emerald-50/50 active:scale-[0.99]"
+              onClick={() => onLogin('mobile', 'volunteer', 'POSKO-A04')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-left transition-all hover:border-[#059669]/40 hover:bg-emerald-50/50 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-[#059669]">
                   <Smartphone className="h-4 w-4" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterVolunteer}</div>
-                  <div className="text-[11px] text-slate-500">{t.quickEnterVolunteerSub}</div>
+                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterVolunteerA}</div>
+                  <div className="text-[11px] text-slate-500">{t.quickEnterVolunteerASub}</div>
                 </div>
               </div>
               <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
@@ -171,8 +185,42 @@ export function LoginScreen({
 
             <button
               type="button"
-              onClick={() => onLogin('command', 'CMD-ALFA7')}
-              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 text-left transition-all hover:border-[#0F172A]/40 hover:bg-slate-100 active:scale-[0.99]"
+              onClick={() => onLogin('mobile', 'volunteer', 'POSKO-B07')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-left transition-all hover:border-sky-400/50 hover:bg-sky-50/60 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterVolunteerB}</div>
+                  <div className="text-[11px] text-slate-500">{t.quickEnterVolunteerBSub}</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onLogin('mobile', 'courier', 'KURIR-04')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-left transition-all hover:border-amber-400/60 hover:bg-amber-50/60 active:scale-[0.99]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-[#B45309]">
+                  <Truck className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-[#0F172A]">{t.quickEnterCourier}</div>
+                  <div className="text-[11px] text-slate-500">{t.quickEnterCourierSub}</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-slate-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onLogin('command', 'command', 'CMD-ALFA7')}
+              className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-left transition-all hover:border-[#0F172A]/40 hover:bg-slate-100 active:scale-[0.99]"
             >
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-[#0F172A]">

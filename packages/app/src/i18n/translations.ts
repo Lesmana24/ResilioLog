@@ -4,6 +4,7 @@ export const COPY: Record<
   AppLanguage,
   {
     postBannerPrefix: string;
+    courierBannerPrefix: string;
     inventarisTitle: string;
     p2pTitle: string;
     historyTitle: string;
@@ -62,8 +63,12 @@ export const COPY: Record<
     pinPlaceholder: string;
     signInBtn: string;
     prototypeDivider: string;
-    quickEnterVolunteer: string;
-    quickEnterVolunteerSub: string;
+    quickEnterVolunteerA: string;
+    quickEnterVolunteerASub: string;
+    quickEnterVolunteerB: string;
+    quickEnterVolunteerBSub: string;
+    quickEnterCourier: string;
+    quickEnterCourierSub: string;
     quickEnterCommand: string;
     quickEnterCommandSub: string;
     signOutBtn: string;
@@ -72,6 +77,7 @@ export const COPY: Record<
 > = {
   en: {
     postBannerPrefix: 'Forward Post',
+    courierBannerPrefix: 'Logistics Courier',
     inventarisTitle: 'Inventory',
     p2pTitle: 'P2P Sync',
     historyTitle: 'Distribution Log',
@@ -131,8 +137,12 @@ export const COPY: Record<
     pinPlaceholder: 'Enter 6-digit PIN',
     signInBtn: 'Sign In',
     prototypeDivider: 'Prototype Quick Access',
-    quickEnterVolunteer: 'Enter as Field Volunteer',
-    quickEnterVolunteerSub: 'Mobile view • Inventory, P2P Sync & History',
+    quickEnterVolunteerA: 'Field Volunteer — Posko A-04',
+    quickEnterVolunteerASub: 'North Sector • Inventory, P2P Sync & History',
+    quickEnterVolunteerB: 'Field Volunteer — Posko B-07',
+    quickEnterVolunteerBSub: 'Surplus Depot • Secondary field peer for sync',
+    quickEnterCourier: 'Logistics Courier — Fleet #04',
+    quickEnterCourierSub: 'QR Relay Mode • Opens directly on QR Sync & Scan',
     quickEnterCommand: 'Enter as Command Center',
     quickEnterCommandSub: 'Desktop dashboard • Map, Quota & CvRDT Log',
     signOutBtn: 'Sign Out',
@@ -140,6 +150,7 @@ export const COPY: Record<
   },
   id: {
     postBannerPrefix: 'Posko Terdepan',
+    courierBannerPrefix: 'Kurir Logistik',
     inventarisTitle: 'Inventaris',
     p2pTitle: 'P2P Sync',
     historyTitle: 'Riwayat',
@@ -199,8 +210,12 @@ export const COPY: Record<
     pinPlaceholder: 'Masukkan PIN 6 digit',
     signInBtn: 'Masuk',
     prototypeDivider: 'Akses Cepat Prototipe',
-    quickEnterVolunteer: 'Masuk sebagai Relawan Lapangan',
-    quickEnterVolunteerSub: 'Tampilan mobile • Inventaris, P2P Sync & Riwayat',
+    quickEnterVolunteerA: 'Relawan Lapangan — Posko A-04',
+    quickEnterVolunteerASub: 'Sektor Utara • Inventaris, P2P Sync & Riwayat',
+    quickEnterVolunteerB: 'Relawan Lapangan — Posko B-07',
+    quickEnterVolunteerBSub: 'Posko Surplus • Relawan peer kedua untuk sinkronisasi',
+    quickEnterCourier: 'Kurir Logistik — Armada #04',
+    quickEnterCourierSub: 'Mode Relay QR • Langsung buka tab QR Sync & Scan',
     quickEnterCommand: 'Masuk sebagai Command Center',
     quickEnterCommandSub: 'Dashboard desktop • Peta, Kuota & Log CvRDT',
     signOutBtn: 'Keluar',

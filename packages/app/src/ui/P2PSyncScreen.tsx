@@ -34,7 +34,7 @@ interface P2PSyncScreenProps {
   onChangeTab: (tab: MobileTab) => void;
   lang: AppLanguage;
   onChangeLang: (lang: AppLanguage) => void;
-  nodeParam: string;
+  role: 'volunteer' | 'courier';
   nodeId: string;
   officerId: string;
   onLogout: () => void;
@@ -76,7 +76,7 @@ export function P2PSyncScreen({
   onChangeTab,
   lang,
   onChangeLang,
-  nodeParam,
+  role,
   nodeId,
   officerId,
   onLogout,
@@ -160,9 +160,13 @@ export function P2PSyncScreen({
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
-              <Navigation className="h-3.5 w-3.5 text-[#0F172A]" />
+              {role === 'courier' ? (
+                <Truck className="h-3.5 w-3.5 text-[#B45309]" />
+              ) : (
+                <Navigation className="h-3.5 w-3.5 text-[#0F172A]" />
+              )}
               <span className="truncate text-[11px] font-bold uppercase tracking-wider text-[#0F172A]">
-                {t.postBannerPrefix} {nodeParam.toUpperCase()}
+                {role === 'courier' ? t.courierBannerPrefix : t.postBannerPrefix} {officerId}
               </span>
             </div>
             <h1 className="font-display truncate text-lg font-extrabold tracking-tight text-[#0F172A]">

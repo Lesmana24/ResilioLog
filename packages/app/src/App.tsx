@@ -6,7 +6,7 @@ import { COPY } from './i18n/translations';
 import { useReplica } from './state/useReplica';
 import { CommandCenterScreen } from './ui/CommandCenterScreen';
 import { InventarisScreen } from './ui/InventarisScreen';
-import { LoginScreen } from './ui/LoginScreen';
+import { LoginScreen, type EntityRole } from './ui/LoginScreen';
 import type { MobileTab } from './ui/MobileBottomNav';
 import { P2PSyncScreen } from './ui/P2PSyncScreen';
 
@@ -14,6 +14,7 @@ type ViewMode = 'mobile' | 'command';
 
 interface AuthSession {
   mode: ViewMode;
+  role: EntityRole;
   officerId: string;
 }
 
@@ -27,7 +28,13 @@ function readStoredSession(storageKey: string): AuthSession | null {
       typeof parsed.officerId === 'string' &&
       parsed.officerId.trim().length > 0
     ) {
-      return { mode: parsed.mode, officerId: parsed.officerId };
+      const role: EntityRole =
+        parsed.role === 'courier' || parsed.role === 'command' || parsed.role === 'volunteer'
+          ? parsed.role
+          : parsed.mode === 'command'
+            ? 'command'
+            : 'volunteer';
+      return { mode: parsed.mode, role, officerId: parsed.officerId };
     }
     return null;
   } catch {
@@ -50,7 +57,6 @@ function writeStoredSession(storageKey: string, session: AuthSession | null): vo
 function ResilioShell() {
   // Default UI language: EN (UI-CONTRACT.md §4)
   const [lang, setLang] = useState<AppLanguage>('en');
-  const [mobileTab, setMobileTab] = useState<MobileTab>('inventaris');
 
   const t = COPY[lang];
 
@@ -88,11 +94,14 @@ function ResilioShell() {
   const [session, setSession] = useState<AuthSession | null>(() =>
     readStoredSession(sessionStorageKey),
   );
+  const [mobileTab, setMobileTab] = useState<MobileTab>(() =>
+    session?.role === 'courier' ? 'sync' : 'inventaris',
+  );
 
-  function handleLogin(mode: ViewMode, officerId: string) {
-    const next: AuthSession = { mode, officerId };
+  function handleLogin(mode: ViewMode, role: EntityRole, officerId: string) {
+    const next: AuthSession = { mode, role, officerId };
     setSession(next);
-    setMobileTab('inventaris');
+    setMobileTab(role === 'courier' ? 'sync' : 'inventaris');
     writeStoredSession(sessionStorageKey, next);
   }
 
@@ -102,6 +111,8 @@ function ResilioShell() {
   }
 
   const isMobileSession = session?.mode === 'mobile';
+  const mobileRole: 'volunteer' | 'courier' =
+    session?.role === 'courier' ? 'courier' : 'volunteer';
 
   return (
     <div
@@ -148,7 +159,7 @@ function ResilioShell() {
               onChangeTab={setMobileTab}
               lang={lang}
               onChangeLang={setLang}
-              nodeParam={activeNodeParam}
+              role={mobileRole}
               nodeId={replica.nodeId}
               officerId={session.officerId}
               onLogout={handleLogout}
@@ -169,7 +180,7 @@ function ResilioShell() {
               onChangeTab={setMobileTab}
               lang={lang}
               onChangeLang={setLang}
-              nodeParam={activeNodeParam}
+              role={mobileRole}
               officerId={session.officerId}
               onLogout={handleLogout}
               items={itemsList}
